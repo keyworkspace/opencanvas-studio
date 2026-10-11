@@ -9,7 +9,7 @@ const state = {
   token: '',
   filePath: null,
   fileSha: null,
-  mode: 'select',
+  mode: 'select',       // 'select' | 'text'
   selectedEl: null,
   originalHtml: ''
 };
@@ -92,9 +92,8 @@ function logout() {
 /* ---------------- Lista de archivos ---------------- */
 async function loadFileList() {
   const tree = await listTree(state);
-  const onlyHtml = /\.(html?)$/i;
   const files = tree
-    .filter((n) => onlyHtml.test(n.path))
+    .filter((n) => /\.(html?)$/i.test(n.path))
     .sort((a, b) => {
       if (a.path === 'index.html') return -1;
       if (b.path === 'index.html') return 1;
@@ -103,18 +102,18 @@ async function loadFileList() {
 
   const select = $('#file-select');
   select.innerHTML = '';
-  if (files.length === 0) {
-    const opt = document.createElement('option');
-    opt.textContent = '— no hay archivos HTML —';
-    opt.disabled = true;
-    select.appendChild(opt);
+  if (!files.length) {
+    const o = document.createElement('option');
+    o.textContent = '— no hay archivos HTML —';
+    o.disabled = true;
+    select.appendChild(o);
     return;
   }
   files.forEach((f) => {
-    const opt = document.createElement('option');
-    opt.value = f.path;
-    opt.textContent = f.path;
-    select.appendChild(opt);
+    const o = document.createElement('option');
+    o.value = f.path;
+    o.textContent = f.path;
+    select.appendChild(o);
   });
   await openFile(files[0].path);
 }
@@ -143,7 +142,6 @@ function renderHtml(html) {
   const baseUrl = `https://${state.owner}.github.io/${state.repo}/`;
   const baseTag = `<base href="${baseUrl}">`;
 
-  // Insertar <base> como PRIMER elemento dentro de <head>
   let prepared;
   if (/<head[^>]*>/i.test(html)) {
     prepared = html.replace(/<head([^>]*)>/i, `<head$1>${baseTag}`);
@@ -157,19 +155,25 @@ function renderHtml(html) {
   doc.write(prepared);
   doc.close();
 
-  injectInspectorStyles(doc);
+  injectStyles(doc);
   installInspector(doc);
   setMode(state.mode);
 }
 
-function injectInspectorStyles(doc) {
+function injectStyles(doc) {
   const style = doc.createElement('style');
   style.setAttribute('data-oc-injected', '');
   style.textContent = `
     .oc-hover { outline: 2px dashed #4c8bf5 !important; outline-offset: 2px !important; }
     .oc-selected { outline: 2px solid #4c8bf5 !important; outline-offset: 2px !important; }
-    [contenteditable="true"] { outline: 2px solid #6ee7a8 !important; outline-offset: 2px !important; }
-    a { pointer-events: none !important; }
+    body.oc-select-mode { user-select: none !important; -webkit-user-select: none !important; }
+    body.oc-select-mode * { cursor: move !important; }
+    body.oc-select-mode a,
+    body.oc-select-mode button,
+    body.oc-select-mode input,
+    body.oc-select-mode textarea { cursor: move !important; }
+    body.oc-text-mode { cursor: text !important; }
+    body.oc-text-mode * { cursor: text !important; }
   `;
   doc.head.appendChild(style);
 }
@@ -177,9 +181,17 @@ function injectInspectorStyles(doc) {
 /* ---------------- Inspector ---------------- */
 function installInspector(doc) {
   let hoverEl = null;
+  let dragging = null;
+  let startX = 0, startY = 0, origX = 0, origY = 0;
+  let dragStarted = false;
 
   const isEditable = (el) =>
     el && el.nodeType === 1 && el !== doc.body && el !== doc.documentElement;
+
+  const clearHover = () => {
+    if (hoverEl) hoverEl.classList.remove('oc-hover');
+    hoverEl = null;
+  };
 
   const select = (el) => {
     if (state.selectedEl) state.selectedEl.classList.remove('oc-selected');
@@ -188,63 +200,60 @@ function installInspector(doc) {
     updatePropsPanel(el);
   };
 
-  // Hover
+  /* Bloquear navegación de enlaces siempre */
+  doc.addEventListener('click', (e) => {
+    const a = e.target.closest('a');
+    if (a) e.preventDefault();
+  }, true);
+
+  /* HOVER (solo en modo select) */
   doc.addEventListener('mouseover', (e) => {
-    if (state.mode !== 'select') return;
+    if (state.mode !== 'select' || dragging) return;
     const el = e.target;
     if (!isEditable(el) || el === state.selectedEl) return;
-    if (hoverEl) hoverEl.classList.remove('oc-hover');
+    clearHover();
     hoverEl = el;
     el.classList.add('oc-hover');
   });
   doc.addEventListener('mouseout', () => {
-    if (hoverEl) hoverEl.classList.remove('oc-hover');
-    hoverEl = null;
+    if (state.mode !== 'select') return;
+    clearHover();
   });
 
-  // Click
-  doc.addEventListener('click', (e) => {
+  /* MOUSEDOWN */
+  doc.addEventListener('mousedown', (e) => {
     const el = e.target;
     if (!isEditable(el)) return;
-    e.preventDefault();
 
     if (state.mode === 'text') {
-      doc.querySelectorAll('[contenteditable="true"]').forEach((n) => {
-        if (n !== el) n.contentEditable = 'false';
-      });
-      el.contentEditable = 'true';
-      el.focus();
-      const range = doc.createRange();
-      range.selectNodeContents(el);
-      const sel = doc.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-    } else {
-      select(el);
+      // Modo texto: el navegador coloca el caret naturalmente.
+      // Nada que hacer, designMode ya hace todo el trabajo.
+      return;
     }
-  });
 
-  // Arrastrar para mover
-  let dragging = null;
-  let startX = 0, startY = 0, origX = 0, origY = 0;
-
-  doc.addEventListener('mousedown', (e) => {
-    if (state.mode !== 'select') return;
-    const el = e.target;
-    if (!isEditable(el)) return;
+    // Modo select: preparar arrastre
+    if (e.button !== 0) return;
     select(el);
     dragging = el;
+    dragStarted = false;
     startX = e.clientX;
     startY = e.clientY;
     origX = parseFloat(el.dataset.ocX || '0');
     origY = parseFloat(el.dataset.ocY || '0');
-    e.preventDefault();
   });
 
+  /* MOUSEMOVE (arrastre) */
   doc.addEventListener('mousemove', (e) => {
     if (!dragging) return;
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
+    if (!dragStarted) {
+      if (Math.abs(dx) + Math.abs(dy) < 3) return;
+      dragStarted = true;
+      clearHover();
+      dragging.style.willChange = 'transform';
+    }
+    e.preventDefault();
     const x = origX + dx;
     const y = origY + dy;
     dragging.dataset.ocX = x;
@@ -253,12 +262,46 @@ function installInspector(doc) {
     updatePropsPanel(dragging);
   });
 
-  doc.addEventListener('mouseup', () => { dragging = null; });
+  /* MOUSEUP */
+  doc.addEventListener('mouseup', () => {
+    if (dragging) dragging.style.willChange = '';
+    dragging = null;
+    dragStarted = false;
+  });
 
-  // Flechas para mover, Supr para borrar
+  /* DOBLE CLIC en modo select → entrar a modo texto donde se hizo clic */
+  doc.addEventListener('dblclick', (e) => {
+    if (state.mode !== 'select') return;
+    const el = e.target;
+    if (!isEditable(el)) return;
+    e.preventDefault();
+    setMode('text');
+    // Colocar el cursor donde se hizo doble clic
+    setTimeout(() => {
+      try {
+        const range = doc.caretRangeFromPoint
+          ? doc.caretRangeFromPoint(e.clientX, e.clientY)
+          : null;
+        if (range) {
+          const sel = doc.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      } catch {}
+    }, 0);
+  });
+
+  /* TECLADO */
   doc.addEventListener('keydown', (e) => {
-    if (state.mode !== 'select' || !state.selectedEl) return;
-    if (e.target.isContentEditable) return;
+    // Escape sale del modo texto
+    if (e.key === 'Escape' && state.mode === 'text') {
+      setMode('select');
+      return;
+    }
+    // En modo texto no interceptamos nada más (dejar escribir normal)
+    if (state.mode === 'text') return;
+
+    if (!state.selectedEl) return;
     const step = e.shiftKey ? 10 : 1;
     let dx = 0, dy = 0;
     if (e.key === 'ArrowLeft') dx = -step;
@@ -280,15 +323,6 @@ function installInspector(doc) {
     el.style.transform = `translate(${x}px, ${y}px)`;
     updatePropsPanel(el);
   });
-
-  // Escape sale del modo texto
-  doc.addEventListener('keydown', (e) => {
-    if (state.mode === 'text' && e.key === 'Escape') {
-      const el = e.target;
-      if (el.isContentEditable) { el.contentEditable = 'false'; el.blur(); }
-      setMode('select');
-    }
-  }, true);
 }
 
 /* ---------------- Panel de propiedades ---------------- */
@@ -297,27 +331,29 @@ function updatePropsPanel(el) {
   if (!el) { panel.hidden = true; return; }
   panel.hidden = false;
 
+  // No sobreescribir el campo que el usuario está editando
+  const focused = document.activeElement;
+  const fid = focused ? focused.id : null;
+
   $('#props-title').textContent = el.tagName.toLowerCase() + (el.id ? '#' + el.id : '');
 
   const ta = $('#prop-text');
-  if (el.children.length === 0) {
-    ta.value = el.textContent;
-    ta.disabled = false;
-  } else {
-    ta.value = '(elemento con hijos)';
-    ta.disabled = true;
+  const isSimple = el.children.length === 0;
+  ta.disabled = !isSimple;
+  if (fid !== 'prop-text') {
+    ta.value = isSimple ? el.textContent : '(elemento con hijos)';
   }
 
-  $('#prop-x').value = Math.round(parseFloat(el.dataset.ocX || '0'));
-  $('#prop-y').value = Math.round(parseFloat(el.dataset.ocY || '0'));
+  if (fid !== 'prop-x') $('#prop-x').value = Math.round(parseFloat(el.dataset.ocX || '0'));
+  if (fid !== 'prop-y') $('#prop-y').value = Math.round(parseFloat(el.dataset.ocY || '0'));
 
   const rect = el.getBoundingClientRect();
-  $('#prop-w').value = Math.round(rect.width);
-  $('#prop-h').value = Math.round(rect.height);
+  if (fid !== 'prop-w') $('#prop-w').value = Math.round(rect.width);
+  if (fid !== 'prop-h') $('#prop-h').value = Math.round(rect.height);
 
   const cs = el.ownerDocument.defaultView.getComputedStyle(el);
-  $('#prop-bg').value = rgbToHex(cs.backgroundColor);
-  $('#prop-color').value = rgbToHex(cs.color);
+  if (fid !== 'prop-bg') $('#prop-bg').value = rgbToHex(cs.backgroundColor);
+  if (fid !== 'prop-color') $('#prop-color').value = rgbToHex(cs.color);
 }
 
 function rgbToHex(rgb) {
@@ -374,11 +410,25 @@ function setMode(mode) {
   $(mode === 'select' ? '#btn-select' : '#btn-text').classList.add('active');
 
   const doc = $('#preview').contentDocument;
-  if (!doc) return;
-  if (mode === 'select') {
-    doc.querySelectorAll('[contenteditable="true"]').forEach((el) => {
-      el.contentEditable = 'false';
-    });
+  if (!doc || !doc.body) return;
+
+  if (mode === 'text') {
+    // Modo texto: designMode hace todo el documento editable.
+    // El caret se coloca donde el usuario hace clic, de forma natural.
+    doc.designMode = 'on';
+    doc.body.classList.add('oc-text-mode');
+    doc.body.classList.remove('oc-select-mode');
+
+    // Deseleccionar y ocultar panel en modo texto
+    $('#props').hidden = true;
+    if (state.selectedEl) {
+      state.selectedEl.classList.remove('oc-selected');
+      state.selectedEl = null;
+    }
+  } else {
+    doc.designMode = 'off';
+    doc.body.classList.remove('oc-text-mode');
+    doc.body.classList.add('oc-select-mode');
   }
 }
 
@@ -388,15 +438,20 @@ async function save() {
   const doc = $('#preview').contentDocument;
   let newContent = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
 
-  // Limpieza de inyecciones del editor
+  // Limpieza de todo lo que inyectamos
   newContent = newContent
     .replace(/<base[^>]*>\s*/i, '')
     .replace(/<style[^>]*data-oc-injected[^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/\s*\boc-hover\b/g, '')
     .replace(/\s*\boc-selected\b/g, '')
+    .replace(/\s*\boc-dragging\b/g, '')
+    .replace(/\s*\boc-text-mode\b/g, '')
+    .replace(/\s*\boc-select-mode\b/g, '')
     .replace(/\s*contenteditable="true"/g, '')
+    .replace(/\s*contenteditable="false"/g, '')
     .replace(/\s*data-oc-x="[^"]*"/g, '')
-    .replace(/\s*data-oc-y="[^"]*"/g, '');
+    .replace(/\s*data-oc-y="[^"]*"/g, '')
+    .replace(/\s*style="will-change: transform;?"/g, '');
 
   $('#btn-save').disabled = true;
   try {
