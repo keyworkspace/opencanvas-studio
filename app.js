@@ -1,6 +1,7 @@
 import { getRepo, listTree, getFile, putFile, deleteFile } from './github.js';
 
 const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
 
 const state = {
   owner: '', repo: '', branch: 'main', token: '',
@@ -8,27 +9,49 @@ const state = {
   mode: 'select',
   selectedEl: null,
   originalHtml: '',
-  files: [], navLinks: [], loading: false,
-  suppressHistory: false
+  files: [], loading: false,
+  suppressHistory: false,
+  device: 'desktop',
+  gradient: { use: false, text: false, type: 'linear', angle: 135, stops: [] }
 };
 
 const STORAGE_KEY = 'opencanvas.session';
 
-/* ---------------- Animaciones disponibles ---------------- */
+/* =================================================
+   ANIMACIONES
+   ================================================= */
 const ANIMATIONS = {
-  'fade-in':     { label: 'Fade In',     name: 'oc-fadeIn',    kf: '@keyframes oc-fadeIn{from{opacity:0}to{opacity:1}}' },
-  'slide-up':    { label: 'Slide Up',    name: 'oc-slideUp',   kf: '@keyframes oc-slideUp{from{opacity:0;transform:translate(var(--oc-tx,0px),calc(var(--oc-ty,0px) + 40px))}to{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px))}}' },
-  'slide-down':  { label: 'Slide Down',  name: 'oc-slideDown', kf: '@keyframes oc-slideDown{from{opacity:0;transform:translate(var(--oc-tx,0px),calc(var(--oc-ty,0px) - 40px))}to{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px))}}' },
-  'slide-left':  { label: 'Slide Left',  name: 'oc-slideLeft', kf: '@keyframes oc-slideLeft{from{opacity:0;transform:translate(calc(var(--oc-tx,0px) + 40px),var(--oc-ty,0px))}to{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px))}}' },
-  'slide-right': { label: 'Slide Right', name: 'oc-slideRight',kf: '@keyframes oc-slideRight{from{opacity:0;transform:translate(calc(var(--oc-tx,0px) - 40px),var(--oc-ty,0px))}to{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px))}}' },
-  'zoom-in':     { label: 'Zoom In',     name: 'oc-zoomIn',    kf: '@keyframes oc-zoomIn{from{opacity:0;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) scale(.85)}to{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) scale(1)}}' },
-  'bounce-in':   { label: 'Bounce In',   name: 'oc-bounceIn',  kf: '@keyframes oc-bounceIn{0%{opacity:0;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) scale(.3)}50%{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) scale(1.05)}70%{transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) scale(.95)}100%{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) scale(1)}}' },
-  'rotate-in':   { label: 'Rotate In',   name: 'oc-rotateIn',  kf: '@keyframes oc-rotateIn{from{opacity:0;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) rotate(-180deg)}to{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) rotate(0)}}' },
-  'flip-in':     { label: 'Flip In',     name: 'oc-flipIn',    kf: '@keyframes oc-flipIn{from{opacity:0;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) rotateY(90deg)}to{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) rotateY(0)}}' },
-  'pulse':       { label: 'Pulse (loop)',name: 'oc-pulse',     kf: '@keyframes oc-pulse{0%,100%{opacity:1}50%{opacity:.5}}', loop: true }
+  'fade-in':    { name: 'oc-fadeIn',    kf: '@keyframes oc-fadeIn{from{opacity:0}to{opacity:1}}' },
+  'slide-up':   { name: 'oc-slideUp',   kf: '@keyframes oc-slideUp{from{opacity:0;transform:translate(var(--oc-tx,0px),calc(var(--oc-ty,0px) + 40px))}to{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px))}}' },
+  'slide-down': { name: 'oc-slideDown', kf: '@keyframes oc-slideDown{from{opacity:0;transform:translate(var(--oc-tx,0px),calc(var(--oc-ty,0px) - 40px))}to{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px))}}' },
+  'slide-left': { name: 'oc-slideLeft', kf: '@keyframes oc-slideLeft{from{opacity:0;transform:translate(calc(var(--oc-tx,0px) + 40px),var(--oc-ty,0px))}to{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px))}}' },
+  'slide-right':{ name: 'oc-slideRight',kf: '@keyframes oc-slideRight{from{opacity:0;transform:translate(calc(var(--oc-tx,0px) - 40px),var(--oc-ty,0px))}to{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px))}}' },
+  'zoom-in':    { name: 'oc-zoomIn',    kf: '@keyframes oc-zoomIn{from{opacity:0;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) scale(.85)}to{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) scale(1)}}' },
+  'bounce-in':  { name: 'oc-bounceIn',  kf: '@keyframes oc-bounceIn{0%{opacity:0;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) scale(.3)}50%{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) scale(1.05)}70%{transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) scale(.95)}100%{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) scale(1)}}' },
+  'rotate-in':  { name: 'oc-rotateIn',  kf: '@keyframes oc-rotateIn{from{opacity:0;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) rotate(-180deg)}to{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) rotate(0)}}' },
+  'flip-in':    { name: 'oc-flipIn',    kf: '@keyframes oc-flipIn{from{opacity:0;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) rotateY(90deg)}to{opacity:1;transform:translate(var(--oc-tx,0px),var(--oc-ty,0px)) rotateY(0)}}' },
+  'pulse':      { name: 'oc-pulse',     kf: '@keyframes oc-pulse{0%,100%{opacity:1}50%{opacity:.5}}', loop: true }
 };
 
-/* ---------------- Sesión ---------------- */
+/* =================================================
+   PRESETS DE GRADIENTES
+   ================================================= */
+const GRADIENT_PRESETS = {
+  rainbow:    { type: 'linear', angle: 90, stops: [{c:'#ff0000',p:0},{c:'#ff8800',p:17},{c:'#ffee00',p:33},{c:'#00cc44',p:50},{c:'#0088ff',p:67},{c:'#8800ff',p:83},{c:'#ff00aa',p:100}] },
+  pride:      { type: 'linear', angle: 180, stops: [{c:'#e40303',p:0},{c:'#ff8c00',p:16},{c:'#ffed00',p:33},{c:'#008026',p:50},{c:'#24408e',p:66},{c:'#732982',p:83},{c:'#e40303',p:100}] },
+  trans:      { type: 'linear', angle: 180, stops: [{c:'#5bcefa',p:0},{c:'#5bcefa',p:20},{c:'#f5a9b8',p:20},{c:'#f5a9b8',p:40},{c:'#ffffff',p:40},{c:'#ffffff',p:60},{c:'#f5a9b8',p:60},{c:'#f5a9b8',p:80},{c:'#5bcefa',p:80},{c:'#5bcefa',p:100}] },
+  bi:         { type: 'linear', angle: 180, stops: [{c:'#d60270',p:0},{c:'#d60270',p:40},{c:'#9b4f96',p:40},{c:'#9b4f96',p:60},{c:'#0038a8',p:60},{c:'#0038a8',p:100}] },
+  pan:        { type: 'linear', angle: 180, stops: [{c:'#ff218c',p:0},{c:'#ff218c',p:33},{c:'#ffd800',p:33},{c:'#ffd800',p:66},{c:'#21b1ff',p:66},{c:'#21b1ff',p:100}] },
+  nonbinary:  { type: 'linear', angle: 180, stops: [{c:'#fcf434',p:0},{c:'#fcf434',p:25},{c:'#ffffff',p:25},{c:'#ffffff',p:50},{c:'#9c59d1',p:50},{c:'#9c59d1',p:75},{c:'#2c2c2c',p:75},{c:'#2c2c2c',p:100}] },
+  sunset:     { type: 'linear', angle: 135, stops: [{c:'#ff6b6b',p:0},{c:'#ffa94d',p:33},{c:'#ffd93d',p:66},{c:'#c77dff',p:100}] },
+  ocean:      { type: 'linear', angle: 135, stops: [{c:'#0066ff',p:0},{c:'#00c2ff',p:50},{c:'#00ffd1',p:100}] },
+  fire:       { type: 'linear', angle: 135, stops: [{c:'#ff0000',p:0},{c:'#ff6600',p:50},{c:'#ffcc00',p:100}] },
+  pastel:     { type: 'linear', angle: 135, stops: [{c:'#ffb3ba',p:0},{c:'#ffdfba',p:25},{c:'#ffffba',p:50},{c:'#baffc9',p:75},{c:'#bae1ff',p:100}] }
+};
+
+/* =================================================
+   SESIÓN
+   ================================================= */
 function saveSession() {
   const { owner, repo, branch, token } = state;
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ owner, repo, branch, token }));
@@ -38,14 +61,16 @@ function loadSession() {
 }
 function clearSession() { localStorage.removeItem(STORAGE_KEY); }
 
-/* ---------------- UI helpers ---------------- */
+/* =================================================
+   UI HELPERS
+   ================================================= */
 function toast(msg, kind = '') {
   const t = $('#toast');
   t.textContent = msg; t.className = 'toast ' + kind; t.hidden = false;
-  clearTimeout(t._timer); t._timer = setTimeout(() => (t.hidden = true), 3200);
+  clearTimeout(t._timer); t._timer = setTimeout(() => (t.hidden = true), 3000);
 }
 function setLoginMsg(msg, kind = '') {
-  const el = $('#login-msg'); el.textContent = msg; el.className = 'msg ' + kind;
+  const el = $('#login-msg'); el.textContent = msg; el.className = 'login-msg ' + kind;
 }
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) =>
@@ -58,15 +83,13 @@ function rgbToHex(rgb) {
   if (!m) return '#ffffff';
   return '#' + m.slice(0, 3).map((n) => (+n).toString(16).padStart(2, '0')).join('');
 }
+function nameFromPath(p) { return p.replace(/\.html?$/i, ''); }
 
-/* ---------------- Undo / Redo ---------------- */
+/* =================================================
+   UNDO / REDO
+   ================================================= */
 const history = { stack: [], index: -1, max: 60 };
-
-function initHistory(html) {
-  history.stack = [html];
-  history.index = 0;
-  updateHistoryButtons();
-}
+function initHistory(html) { history.stack = [html]; history.index = 0; updateHistoryButtons(); }
 function pushHistory(html) {
   if (state.suppressHistory) return;
   history.stack = history.stack.slice(0, history.index + 1);
@@ -77,13 +100,11 @@ function pushHistory(html) {
 }
 function undo() {
   if (history.index <= 0) { toast('Nada que deshacer'); return; }
-  history.index--;
-  restoreHistory();
+  history.index--; restoreHistory();
 }
 function redo() {
   if (history.index >= history.stack.length - 1) { toast('Nada que rehacer'); return; }
-  history.index++;
-  restoreHistory();
+  history.index++; restoreHistory();
 }
 function restoreHistory() {
   const html = history.stack[history.index];
@@ -91,7 +112,7 @@ function restoreHistory() {
   clearSelection();
   renderHtml(html);
   updateHistoryButtons();
-  setTimeout(() => { state.suppressHistory = false; }, 250);
+  setTimeout(() => { state.suppressHistory = false; }, 300);
 }
 function updateHistoryButtons() {
   $('#btn-undo').disabled = history.index <= 0;
@@ -100,28 +121,27 @@ function updateHistoryButtons() {
 let _snapTimer = null;
 function scheduleSnapshot() {
   clearTimeout(_snapTimer);
-  _snapTimer = setTimeout(() => snapshotNow(), 400);
+  _snapTimer = setTimeout(snapshotNow, 400);
 }
 function snapshotNow() {
   clearTimeout(_snapTimer);
   if (state.suppressHistory || !state.filePath) return;
-  const html = serializeCurrentIframe();
-  pushHistory(html);
+  pushHistory(serializeCurrentIframe());
 }
 
-/* ---------------- Conexión ---------------- */
+/* =================================================
+   CONEXIÓN
+   ================================================= */
 async function connect(silent = false) {
   const owner = $('#inp-owner').value.trim();
   const repo = $('#inp-repo').value.trim();
   const branch = $('#inp-branch').value.trim() || 'main';
   const token = $('#inp-token').value.trim();
-
   if (!owner || !repo || !token) {
     if (!silent) setLoginMsg('Completa todos los campos.', 'error');
     return false;
   }
   if (!silent) setLoginMsg('Conectando…');
-
   try {
     const info = await getRepo({ owner, repo, token });
     Object.assign(state, { owner, repo, branch, token });
@@ -134,20 +154,18 @@ async function connect(silent = false) {
     return false;
   }
 }
-
 async function enterEditor() {
   $('#login').hidden = true;
   $('#editor').hidden = false;
   await refreshFileList();
   if (state.files.length && !state.filePath) await openFile(state.files[0].path);
 }
-
 function logout() {
   clearSession();
   Object.assign(state, {
     owner: '', repo: '', branch: 'main', token: '',
     filePath: null, fileSha: null, selectedEl: null, originalHtml: '',
-    files: [], navLinks: [], loading: false
+    files: [], loading: false
   });
   history.stack = []; history.index = -1;
   $('#editor').hidden = true;
@@ -157,7 +175,9 @@ function logout() {
   setLoginMsg('');
 }
 
-/* ---------------- Lista de archivos ---------------- */
+/* =================================================
+   LISTA DE PÁGINAS
+   ================================================= */
 async function refreshFileList() {
   const tree = await listTree(state);
   state.files = tree
@@ -175,7 +195,12 @@ function renderSidebar() {
   state.files.forEach((f) => {
     const li = document.createElement('li');
     if (f.path === state.filePath) li.classList.add('active');
-    li.innerHTML = `<span class="name" title="${escapeHtml(f.path)}">${escapeHtml(f.path)}</span><button class="del" title="Eliminar">✕</button>`;
+    const isIndex = f.path === 'index.html';
+    li.innerHTML = `
+      <span class="page-icon">${isIndex ? '★' : '◻'}</span>
+      <span class="name" title="${escapeHtml(f.path)}">${escapeHtml(nameFromPath(f.path))}</span>
+      <button class="del" title="Eliminar">✕</button>
+    `;
     li.onclick = () => { if (state.loading || f.path === state.filePath) return; openFile(f.path); };
     li.querySelector('.del').onclick = (e) => { e.stopPropagation(); deletePage(f.path); };
     ul.appendChild(li);
@@ -185,17 +210,20 @@ function renderFileSelect() {
   const select = $('#file-select'); select.innerHTML = '';
   if (!state.files.length) {
     const o = document.createElement('option');
-    o.textContent = '— no hay archivos HTML —'; o.disabled = true; select.appendChild(o); return;
+    o.textContent = 'Sin páginas'; o.disabled = true; select.appendChild(o); return;
   }
   state.files.forEach((f) => {
     const o = document.createElement('option');
-    o.value = f.path; o.textContent = f.path;
+    o.value = f.path;
+    o.textContent = nameFromPath(f.path);
     if (f.path === state.filePath) o.selected = true;
     select.appendChild(o);
   });
 }
 
-/* ---------------- Abrir archivo ---------------- */
+/* =================================================
+   ABRIR ARCHIVO
+   ================================================= */
 async function openFile(path) {
   if (state.loading) return;
   state.loading = true;
@@ -205,14 +233,17 @@ async function openFile(path) {
     state.filePath = path; state.fileSha = sha; state.originalHtml = content;
     clearSelection();
     renderSidebar(); renderFileSelect();
+    $('#canvas-empty').hidden = true;
     renderHtml(content, () => initHistory(content));
-    toast('Cargado: ' + path, 'ok');
+    toast('Cargada: ' + nameFromPath(path), 'ok');
   } catch (err) {
     toast('Error al abrir: ' + err.message, 'error');
   } finally { state.loading = false; }
 }
 
-/* ---------------- Render ---------------- */
+/* =================================================
+   RENDER
+   ================================================= */
 function renderHtml(html, onDone) {
   const iframe = $('#preview');
   const baseUrl = `https://${state.owner}.github.io/${state.repo}/`;
@@ -239,23 +270,25 @@ function renderHtml(html, onDone) {
 }
 
 function injectStyles(doc) {
-  const style = doc.createElement('style');
-  style.setAttribute('data-oc-injected', '');
+  let style = doc.getElementById('oc-injected');
+  if (!style) {
+    style = doc.createElement('style');
+    style.id = 'oc-injected';
+    style.setAttribute('data-oc-injected', '');
+    doc.head.appendChild(style);
+  }
   style.textContent = `
-    .oc-hover { outline: 2px dashed #4c8bf5 !important; outline-offset: 2px !important; }
-    .oc-selected { outline: 2px solid #4c8bf5 !important; outline-offset: 2px !important; }
+    .oc-hover { outline: 2px dashed #7c5cfc !important; outline-offset: 2px !important; }
+    .oc-selected { outline: 2px solid #7c5cfc !important; outline-offset: 2px !important; }
     body.oc-select-mode { user-select: none !important; -webkit-user-select: none !important; }
     body.oc-select-mode * { cursor: move !important; }
     body.oc-text-mode, body.oc-text-mode * { cursor: text !important; }
     body.oc-editing [class*="oc-anim-"] { animation: none !important; }
   `;
-  doc.head.appendChild(style);
 }
 
-/* Runtime style: keyframes + class rules (persistente) */
 function buildRuntimeCss(usedKeys) {
-  const kfs = [];
-  const cls = [];
+  const kfs = [], cls = [];
   usedKeys.forEach((key) => {
     const a = ANIMATIONS[key];
     if (!a) return;
@@ -265,7 +298,6 @@ function buildRuntimeCss(usedKeys) {
   });
   return [...kfs, ...cls].join('\n');
 }
-
 function ensureRuntimeStyles(doc) {
   const used = new Set();
   doc.querySelectorAll('[class*="oc-anim-"]').forEach((el) => {
@@ -282,8 +314,10 @@ function ensureRuntimeStyles(doc) {
   style.textContent = buildRuntimeCss(used);
 }
 
-/* ---------------- Handles ---------------- */
-const HANDLE_SIZE = 12;
+/* =================================================
+   HANDLES
+   ================================================= */
+const HANDLE_SIZE = 11;
 function createHandleLayer(doc) {
   if (doc.getElementById('oc-handle-layer')) return;
   const layer = doc.createElement('div');
@@ -295,7 +329,7 @@ function createHandleLayer(doc) {
   dirs.forEach((d) => {
     const h = doc.createElement('div');
     h.className = 'oc-handle'; h.dataset.dir = d;
-    h.style.cssText = `position:fixed;width:${HANDLE_SIZE}px;height:${HANDLE_SIZE}px;margin-left:-${HANDLE_SIZE/2}px;margin-top:-${HANDLE_SIZE/2}px;background:#fff;border:2px solid #4c8bf5;border-radius:50%;box-sizing:border-box;pointer-events:auto;display:none;cursor:${cursors[d]};box-shadow:0 1px 3px rgba(0,0,0,.35);`;
+    h.style.cssText = `position:fixed;width:${HANDLE_SIZE}px;height:${HANDLE_SIZE}px;margin-left:-${HANDLE_SIZE/2}px;margin-top:-${HANDLE_SIZE/2}px;background:#fff;border:2px solid #7c5cfc;border-radius:50%;box-sizing:border-box;pointer-events:auto;display:none;cursor:${cursors[d]};box-shadow:0 1px 3px rgba(0,0,0,.35);`;
     layer.appendChild(h);
   });
   doc.body.appendChild(layer);
@@ -305,8 +339,7 @@ function positionHandles(doc, el) {
   if (!layer) return;
   const handles = layer.querySelectorAll('.oc-handle');
   if (!el || state.mode !== 'select') {
-    handles.forEach((h) => (h.style.display = 'none'));
-    return;
+    handles.forEach((h) => (h.style.display = 'none')); return;
   }
   const r = el.getBoundingClientRect();
   const pos = {
@@ -326,7 +359,9 @@ function hideHandles(doc) {
   layer.querySelectorAll('.oc-handle').forEach((h) => (h.style.display = 'none'));
 }
 
-/* ---------------- Posición ---------------- */
+/* =================================================
+   POSICIÓN
+   ================================================= */
 function setPosition(el, x, y) {
   el.dataset.ocX = x; el.dataset.ocY = y;
   el.style.setProperty('--oc-tx', x + 'px');
@@ -345,7 +380,9 @@ function getPosition(el) {
   return { x: 0, y: 0 };
 }
 
-/* ---------------- Inspector ---------------- */
+/* =================================================
+   INSPECTOR
+   ================================================= */
 function installInspector(doc) {
   let hoverEl = null;
   let dragging = null, dragStarted = false;
@@ -357,7 +394,6 @@ function installInspector(doc) {
     !el.classList.contains('oc-handle') && !el.closest('#oc-handle-layer');
 
   const clearHover = () => { if (hoverEl) hoverEl.classList.remove('oc-hover'); hoverEl = null; };
-
   const select = (el) => {
     if (state.selectedEl) state.selectedEl.classList.remove('oc-selected');
     state.selectedEl = el;
@@ -365,14 +401,13 @@ function installInspector(doc) {
     updatePropsPanel(el);
     positionHandles(doc, el);
   };
-  state._select = select;
-
   const stop = () => {
     if (dragging) dragging.style.willChange = '';
     if (resizing) resizing.el.style.willChange = '';
     dragging = null; dragStarted = false; resizing = null;
   };
   state._stopInteraction = stop;
+  state._select = select;
 
   doc.addEventListener('click', (e) => {
     const a = e.target.closest('a');
@@ -385,10 +420,7 @@ function installInspector(doc) {
     if (!isEditable(el) || el === state.selectedEl) return;
     clearHover(); hoverEl = el; el.classList.add('oc-hover');
   });
-  doc.addEventListener('mouseout', () => {
-    if (state.mode !== 'select') return;
-    clearHover();
-  });
+  doc.addEventListener('mouseout', () => { if (state.mode === 'select') clearHover(); });
 
   doc.addEventListener('mousedown', (e) => {
     const target = e.target;
@@ -417,8 +449,7 @@ function installInspector(doc) {
   doc.addEventListener('mousemove', (e) => {
     if (resizing) {
       e.preventDefault();
-      const dx = e.clientX - rsStartX;
-      const dy = e.clientY - rsStartY;
+      const dx = e.clientX - rsStartX, dy = e.clientY - rsStartY;
       const dir = resizing.dir, el = resizing.el;
       let w = rsStartW, h = rsStartH, tx = rsStartTx, ty = rsStartTy;
       if (dir.includes('e')) w = rsStartW + dx;
@@ -439,20 +470,17 @@ function installInspector(doc) {
       dragging.style.willChange = 'transform';
     }
     e.preventDefault();
-    const x = origX + dx, y = origY + dy;
-    setPosition(dragging, x, y);
+    setPosition(dragging, origX + dx, origY + dy);
     updatePropsPanel(dragging);
     positionHandles(doc, dragging);
   });
 
   doc.addEventListener('mouseup', () => {
-    const hadDrag = dragStarted, hadResize = !!resizing;
+    const was = dragStarted || !!resizing;
     stop();
-    if (hadDrag || hadResize) snapshotNow();
+    if (was) snapshotNow();
   });
-  window.addEventListener('mouseup', () => {
-    if (state._stopInteraction) state._stopInteraction();
-  });
+  window.addEventListener('mouseup', () => state._stopInteraction?.());
 
   doc.addEventListener('dblclick', (e) => {
     if (state.mode !== 'select') return;
@@ -464,22 +492,19 @@ function installInspector(doc) {
       try {
         const range = doc.caretRangeFromPoint ? doc.caretRangeFromPoint(e.clientX, e.clientY) : null;
         if (range) {
-          const sel = doc.getSelection();
-          sel.removeAllRanges(); sel.addRange(range);
+          const sel = doc.getSelection(); sel.removeAllRanges(); sel.addRange(range);
         }
       } catch {}
     }, 0);
   });
 
   doc.addEventListener('keydown', (e) => {
-    // Undo/Redo globales en modo select
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
       if (state.mode === 'select') { e.preventDefault(); undo(); return; }
     }
     if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y' || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) {
       e.preventDefault(); redo(); return;
     }
-
     if (e.key === 'Escape' && state.mode === 'text') { setMode('select'); return; }
     if (state.mode === 'text') return;
     if (!state.selectedEl) return;
@@ -491,10 +516,7 @@ function installInspector(doc) {
     else if (e.key === 'ArrowDown') dy = step;
     else if (e.key === 'Delete' || e.key === 'Backspace') {
       e.preventDefault();
-      state.selectedEl.remove();
-      clearSelection();
-      snapshotNow();
-      return;
+      state.selectedEl.remove(); clearSelection(); snapshotNow(); return;
     } else return;
     e.preventDefault();
     const el = state.selectedEl;
@@ -510,7 +532,9 @@ function installInspector(doc) {
   doc.defaultView?.addEventListener('resize', reposition);
 }
 
-/* ---------------- Panel de propiedades ---------------- */
+/* =================================================
+   SELECCIÓN
+   ================================================= */
 function clearSelection() {
   const doc = $('#preview').contentDocument;
   if (state.selectedEl) state.selectedEl.classList.remove('oc-selected');
@@ -519,47 +543,15 @@ function clearSelection() {
   if (doc) hideHandles(doc);
 }
 
-function updatePropsPanel(el) {
-  const panel = $('#props');
-  if (!el) { panel.hidden = true; return; }
-  panel.hidden = false;
-  const fid = document.activeElement?.id || null;
-
-  $('#props-title').textContent = el.tagName.toLowerCase() + (el.id ? '#' + el.id : '');
-
-  const ta = $('#prop-text');
-  const isSimple = el.children.length === 0;
-  ta.disabled = !isSimple;
-  if (fid !== 'prop-text') ta.value = isSimple ? el.textContent : '(elemento con hijos)';
-
-  const p = getPosition(el);
-  if (fid !== 'prop-x') $('#prop-x').value = Math.round(p.x);
-  if (fid !== 'prop-y') $('#prop-y').value = Math.round(p.y);
-
-  const r = el.getBoundingClientRect();
-  if (fid !== 'prop-w') $('#prop-w').value = Math.round(r.width);
-  if (fid !== 'prop-h') $('#prop-h').value = Math.round(r.height);
-
-  const cs = el.ownerDocument.defaultView.getComputedStyle(el);
-  if (fid !== 'prop-bg') $('#prop-bg').value = rgbToHex(cs.backgroundColor);
-  if (fid !== 'prop-color') $('#prop-color').value = rgbToHex(cs.color);
-
-  // Degradado
-  const grad = parseGradient(el, cs);
-  if (fid !== 'prop-grad-use') $('#prop-grad-use').checked = grad.use;
-  $('#prop-grad-fields').hidden = !grad.use;
-  if (fid !== 'prop-grad-type') $('#prop-grad-type').value = grad.type;
-  if (fid !== 'prop-grad-angle') $('#prop-grad-angle').value = grad.angle;
-  if (fid !== 'prop-grad-c1') $('#prop-grad-c1').value = grad.c1;
-  if (fid !== 'prop-grad-c2') $('#prop-grad-c2').value = grad.c2;
-  if (fid !== 'prop-grad-text') $('#prop-grad-text').checked = grad.text;
-  updateGradPreview();
-
-  // Animación
-  const anim = readAnimation(el);
-  if (fid !== 'prop-anim-name') $('#prop-anim-name').value = anim.name;
-  if (fid !== 'prop-anim-dur') $('#prop-anim-dur').value = anim.dur;
-  if (fid !== 'prop-anim-delay') $('#prop-anim-delay').value = anim.delay;
+/* =================================================
+   GRADIENTES MULTI-COLOR
+   ================================================= */
+function gradientCss(g) {
+  if (!g.stops.length) return '';
+  const stops = [...g.stops].sort((a, b) => a.p - b.p).map((s) => `${s.c} ${s.p}%`).join(', ');
+  if (g.type === 'radial') return `radial-gradient(circle, ${stops})`;
+  if (g.type === 'conic') return `conic-gradient(from ${g.angle}deg, ${stops})`;
+  return `linear-gradient(${g.angle}deg, ${stops})`;
 }
 
 function parseGradient(el, cs) {
@@ -567,42 +559,61 @@ function parseGradient(el, cs) {
   const clip = cs.backgroundClip || cs.webkitBackgroundClip || '';
   const text = clip.includes('text');
   if (!bg || !bg.includes('gradient')) {
-    return { use: false, text, type: 'linear', angle: 135, c1: '#4c8bf5', c2: '#6ee7a8' };
+    return { use: false, text, type: 'linear', angle: 135, stops: [{c:'#7c5cfc',p:0},{c:'#22d3ee',p:100}] };
   }
   const isRadial = bg.includes('radial-gradient');
-  const angleMatch = bg.match(/(-?\d+(?:\.\d+)?)deg/);
+  const isConic = bg.includes('conic-gradient');
+  const angleMatch = bg.match(/(?:from\s+)?(-?\d+(?:\.\d+)?)deg/);
   const angle = angleMatch ? Math.round(parseFloat(angleMatch[1])) : 135;
-  const colors = [];
-  const rgbRe = /rgba?\(([^)]+)\)/g;
-  let m;
-  while ((m = rgbRe.exec(bg)) !== null) {
-    const parts = m[1].split(',').map((s) => parseFloat(s.trim()));
-    colors.push(rgbToHex(`rgb(${parts[0]},${parts[1]},${parts[2]})`));
+
+  // Extraer todos los color stops
+  const stops = [];
+  // Buscar el interior de la función de gradiente
+  const innerMatch = bg.match(/gradient\([^,]+,\s*(.+)\)/i);
+  if (innerMatch) {
+    const stopsStr = innerMatch[1];
+    // Separar por comas que no estén dentro de paréntesis (para rgb())
+    const parts = [];
+    let depth = 0, cur = '';
+    for (const ch of stopsStr) {
+      if (ch === '(') depth++;
+      else if (ch === ')') depth--;
+      if (ch === ',' && depth === 0) { parts.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    if (cur.trim()) parts.push(cur.trim());
+
+    parts.forEach((part, i) => {
+      const colorMatch = part.match(/(rgba?\([^)]+\)|#[0-9a-f]{3,8})/i);
+      const posMatch = part.match(/([\d.]+)%/);
+      if (colorMatch) {
+        let c = colorMatch[1];
+        if (c.startsWith('rgb')) {
+          const nums = c.match(/\d+/g);
+          if (nums) c = rgbToHex(`rgb(${nums[0]},${nums[1]},${nums[2]})`);
+        } else if (c.length === 4) {
+          c = '#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3];
+        } else if (c.length > 7) c = c.slice(0, 7);
+        const p = posMatch ? parseFloat(posMatch[1]) : Math.round((i / (parts.length - 1)) * 100);
+        stops.push({ c, p });
+      }
+    });
   }
-  const hexRe = /#([0-9a-f]{3,8})\b/gi;
-  while ((m = hexRe.exec(bg)) !== null) colors.push('#' + m[1].slice(0, 6));
-  return {
-    use: true, text,
-    type: isRadial ? 'radial' : 'linear',
-    angle,
-    c1: colors[0] || '#4c8bf5',
-    c2: colors[1] || '#6ee7a8'
-  };
+  if (!stops.length) stops.push({ c: '#7c5cfc', p: 0 }, { c: '#22d3ee', p: 100 });
+
+  return { use: true, text, type: isRadial ? 'radial' : isConic ? 'conic' : 'linear', angle, stops };
 }
 
-function applyGradient(el, { use, text, type, angle, c1, c2 }) {
-  if (!use) {
+function applyGradient(el, g) {
+  if (!g.use || !g.stops.length) {
     el.style.removeProperty('background-image');
     el.style.removeProperty('-webkit-background-clip');
     el.style.removeProperty('background-clip');
     el.style.removeProperty('-webkit-text-fill-color');
     return;
   }
-  const grad = type === 'radial'
-    ? `radial-gradient(circle, ${c1} 0%, ${c2} 100%)`
-    : `linear-gradient(${angle}deg, ${c1} 0%, ${c2} 100%)`;
-  el.style.backgroundImage = grad;
-  if (text) {
+  el.style.backgroundImage = gradientCss(g);
+  if (g.text) {
     el.style.webkitBackgroundClip = 'text';
     el.style.backgroundClip = 'text';
     el.style.webkitTextFillColor = 'transparent';
@@ -614,28 +625,102 @@ function applyGradient(el, { use, text, type, angle, c1, c2 }) {
   }
 }
 
+function renderGradientStops() {
+  const wrap = $('#grad-stops'); wrap.innerHTML = '';
+  state.gradient.stops.forEach((stop, i) => {
+    const row = document.createElement('div');
+    row.className = 'grad-stop';
+    row.innerHTML = `
+      <input type="color" data-i="${i}" value="${stop.c}" />
+      <input type="range" data-i="${i}" min="0" max="100" value="${stop.p}" />
+      <span class="stop-pos">${stop.p}%</span>
+      <button class="stop-remove" data-i="${i}" ${state.gradient.stops.length <= 2 ? 'disabled' : ''}>✕</button>
+    `;
+    row.querySelector('input[type="color"]').oninput = (e) => {
+      state.gradient.stops[i].c = e.target.value;
+      updateGradPreview(); applyGradFromUI();
+    };
+    row.querySelector('input[type="range"]').oninput = (e) => {
+      state.gradient.stops[i].p = parseInt(e.target.value);
+      row.querySelector('.stop-pos').textContent = e.target.value + '%';
+      updateGradPreview(); applyGradFromUI();
+    };
+    row.querySelector('.stop-remove').onclick = () => {
+      if (state.gradient.stops.length <= 2) return;
+      state.gradient.stops.splice(i, 1);
+      renderGradientStops(); updateGradPreview(); applyGradFromUI();
+    };
+    wrap.appendChild(row);
+  });
+}
+
 function updateGradPreview() {
-  const use = $('#prop-grad-use').checked;
   const pv = $('#prop-grad-preview');
-  if (!use) { pv.style.background = 'transparent'; return; }
-  const type = $('#prop-grad-type').value;
-  const angle = $('#prop-grad-angle').value;
-  const c1 = $('#prop-grad-c1').value;
-  const c2 = $('#prop-grad-c2').value;
-  pv.style.background = type === 'radial'
-    ? `radial-gradient(circle, ${c1}, ${c2})`
-    : `linear-gradient(${angle}deg, ${c1}, ${c2})`;
+  if (!state.gradient.use) { pv.style.background = 'transparent'; return; }
+  pv.style.background = gradientCss(state.gradient);
+}
+
+function applyGradFromUI() {
+  const el = state.selectedEl; if (!el) return;
+  applyGradient(el, state.gradient);
+  scheduleSnapshot();
+}
+
+/* =================================================
+   PANEL DE PROPIEDADES
+   ================================================= */
+function updatePropsPanel(el) {
+  const panel = $('#props');
+  if (!el) { panel.hidden = true; return; }
+  panel.hidden = false;
+  const fid = document.activeElement?.id || null;
+
+  $('#props-title').textContent = el.tagName.toLowerCase() + (el.id ? '#' + el.id : '');
+
+  const ta = $('#prop-text');
+  const isSimple = el.children.length === 0;
+  ta.disabled = !isSimple;
+  if (fid !== 'prop-text') ta.value = isSimple ? el.textContent : '(contenido anidado)';
+
+  const p = getPosition(el);
+  if (fid !== 'prop-x') $('#prop-x').value = Math.round(p.x);
+  if (fid !== 'prop-y') $('#prop-y').value = Math.round(p.y);
+
+  const r = el.getBoundingClientRect();
+  if (fid !== 'prop-w') $('#prop-w').value = Math.round(r.width);
+  if (fid !== 'prop-h') $('#prop-h').value = Math.round(r.height);
+
+  const cs = el.ownerDocument.defaultView.getComputedStyle(el);
+  const bgHex = rgbToHex(cs.backgroundColor);
+  const fgHex = rgbToHex(cs.color);
+  if (fid !== 'prop-bg' && fid !== 'prop-bg-hex') { $('#prop-bg').value = bgHex; $('#prop-bg-hex').value = bgHex; }
+  if (fid !== 'prop-color' && fid !== 'prop-color-hex') { $('#prop-color').value = fgHex; $('#prop-color-hex').value = fgHex; }
+
+  const grad = parseGradient(el, cs);
+  state.gradient = { ...grad };
+  $('#prop-grad-use').checked = grad.use;
+  $('#prop-grad-fields').hidden = !grad.use;
+  $('#prop-grad-text').checked = grad.text;
+  $('#prop-grad-angle').value = grad.angle;
+  $('#grad-angle-val').textContent = grad.angle;
+  $$('.seg[data-grad-type]').forEach((b) => b.classList.toggle('active', b.dataset.gradType === grad.type));
+  $('#grad-angle-wrap').hidden = grad.type === 'radial';
+  renderGradientStops();
+  updateGradPreview();
+
+  const anim = readAnimation(el);
+  if (fid !== 'prop-anim-name') $('#prop-anim-name').value = anim.name;
+  if (fid !== 'prop-anim-dur') $('#prop-anim-dur').value = anim.dur;
+  if (fid !== 'prop-anim-delay') $('#prop-anim-delay').value = anim.delay;
 }
 
 function readAnimation(el) {
   const cls = [...el.classList].find((c) => c.startsWith('oc-anim-'));
   if (!cls) return { name: '', dur: 600, delay: 0 };
-  const key = cls.slice('oc-anim-'.length);
   const dur = parseInt(el.style.getPropertyValue('--oc-dur')) || 600;
   const delay = parseInt(el.style.getPropertyValue('--oc-delay')) || 0;
-  return { name: key, dur, delay };
+  return { name: cls.slice('oc-anim-'.length), dur, delay };
 }
-
 function applyAnimation(el, key, dur, delay) {
   [...el.classList].forEach((c) => { if (c.startsWith('oc-anim-')) el.classList.remove(c); });
   el.style.removeProperty('--oc-dur');
@@ -644,8 +729,7 @@ function applyAnimation(el, key, dur, delay) {
   el.classList.add('oc-anim-' + key);
   el.style.setProperty('--oc-dur', (dur || 600) + 'ms');
   el.style.setProperty('--oc-delay', (delay || 0) + 'ms');
-  const doc = $('#preview').contentDocument;
-  ensureRuntimeStyles(doc);
+  ensureRuntimeStyles($('#preview').contentDocument);
 }
 
 function bindPropsEvents() {
@@ -679,29 +763,89 @@ function bindPropsEvents() {
     el.style.height = e.target.value + 'px';
     positionHandles(doc(), el); scheduleSnapshot();
   };
-  $('#prop-bg').oninput = (e) => { const el = sel(); if (el) { el.style.backgroundColor = e.target.value; scheduleSnapshot(); } };
-  $('#prop-color').oninput = (e) => { const el = sel(); if (el) { el.style.color = e.target.value; scheduleSnapshot(); } };
-
-  /* Degradado */
-  const applyGradFromUI = () => {
+  $('#prop-bg').oninput = (e) => {
     const el = sel(); if (!el) return;
-    applyGradient(el, {
-      use: $('#prop-grad-use').checked,
-      text: $('#prop-grad-text').checked,
-      type: $('#prop-grad-type').value,
-      angle: parseFloat($('#prop-grad-angle').value) || 135,
-      c1: $('#prop-grad-c1').value,
-      c2: $('#prop-grad-c2').value
-    });
-    updateGradPreview(); scheduleSnapshot();
+    el.style.backgroundColor = e.target.value;
+    $('#prop-bg-hex').value = e.target.value;
+    scheduleSnapshot();
   };
-  $('#prop-grad-use').onchange = () => {
-    $('#prop-grad-fields').hidden = !$('#prop-grad-use').checked;
+  $('#prop-bg-hex').oninput = (e) => {
+    const v = e.target.value.trim();
+    if (/^#[0-9a-f]{3,8}$/i.test(v)) {
+      const el = sel(); if (!el) return;
+      el.style.backgroundColor = v;
+      $('#prop-bg').value = v;
+      scheduleSnapshot();
+    }
+  };
+  $('#prop-color').oninput = (e) => {
+    const el = sel(); if (!el) return;
+    el.style.color = e.target.value;
+    $('#prop-color-hex').value = e.target.value;
+    scheduleSnapshot();
+  };
+  $('#prop-color-hex').oninput = (e) => {
+    const v = e.target.value.trim();
+    if (/^#[0-9a-f]{3,8}$/i.test(v)) {
+      const el = sel(); if (!el) return;
+      el.style.color = v;
+      $('#prop-color').value = v;
+      scheduleSnapshot();
+    }
+  };
+
+  /* Tabs */
+  $$('.tab').forEach((tab) => {
+    tab.onclick = () => {
+      $$('.tab').forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      $$('.props-body').forEach((p) => p.hidden = p.dataset.panel !== tab.dataset.tab);
+    };
+  });
+
+  /* Gradient */
+  $('#prop-grad-use').onchange = (e) => {
+    state.gradient.use = e.target.checked;
+    $('#prop-grad-fields').hidden = !e.target.checked;
+    updateGradPreview(); applyGradFromUI();
+  };
+  $('#prop-grad-text').onchange = (e) => {
+    state.gradient.text = e.target.checked;
     applyGradFromUI();
   };
-  ['#prop-grad-type','#prop-grad-angle','#prop-grad-c1','#prop-grad-c2','#prop-grad-text'].forEach((id) => {
-    $(id).oninput = applyGradFromUI;
-    $(id).onchange = applyGradFromUI;
+  $$('.seg[data-grad-type]').forEach((b) => {
+    b.onclick = () => {
+      state.gradient.type = b.dataset.gradType;
+      $$('.seg[data-grad-type]').forEach((x) => x.classList.toggle('active', x === b));
+      $('#grad-angle-wrap').hidden = b.dataset.gradType === 'radial';
+      updateGradPreview(); applyGradFromUI();
+    };
+  });
+  $('#prop-grad-angle').oninput = (e) => {
+    state.gradient.angle = parseInt(e.target.value);
+    $('#grad-angle-val').textContent = e.target.value;
+    updateGradPreview(); applyGradFromUI();
+  };
+  $('#grad-add-stop').onclick = () => {
+    const last = state.gradient.stops[state.gradient.stops.length - 1];
+    const prev = state.gradient.stops[state.gradient.stops.length - 2] || { p: 0 };
+    const p = Math.round(((prev.p || 0) + (last?.p || 100)) / 2);
+    state.gradient.stops.push({ c: '#ffffff', p });
+    state.gradient.stops.sort((a, b) => a.p - b.p);
+    renderGradientStops(); updateGradPreview(); applyGradFromUI();
+  };
+  $$('.preset-chip').forEach((chip) => {
+    chip.onclick = () => {
+      const preset = GRADIENT_PRESETS[chip.dataset.preset];
+      if (!preset) return;
+      state.gradient = { ...state.gradient, ...preset, use: true };
+      $('#prop-grad-use').checked = true;
+      $('#prop-grad-fields').hidden = false;
+      $('#prop-grad-angle').value = state.gradient.angle;
+      $('#grad-angle-val').textContent = state.gradient.angle;
+      $$('.seg[data-grad-type]').forEach((b) => b.classList.toggle('active', b.dataset.gradType === state.gradient.type));
+      renderGradientStops(); updateGradPreview(); applyGradFromUI();
+    };
   });
 
   /* Animación */
@@ -717,12 +861,10 @@ function bindPropsEvents() {
   $('#prop-anim-name').onchange = applyAnimFromUI;
   $('#prop-anim-dur').oninput = applyAnimFromUI;
   $('#prop-anim-delay').oninput = applyAnimFromUI;
-
   $('#prop-anim-play').onclick = () => {
     const el = sel(); if (!el) return;
     const a = readAnimation(el); if (!a.name) { toast('Sin animación'); return; }
     const doc = $('#preview').contentDocument;
-    const dur = a.dur, delay = a.delay;
     doc.body.classList.remove('oc-editing');
     const inline = el.style.animation;
     el.style.animation = 'none';
@@ -730,24 +872,22 @@ function bindPropsEvents() {
     el.style.animation = inline || '';
     ensureRuntimeStyles(doc);
     clearTimeout(el._ocPlayTimer);
-    el._ocPlayTimer = setTimeout(() => doc.body.classList.add('oc-editing'), dur + delay + 300);
+    el._ocPlayTimer = setTimeout(() => doc.body.classList.add('oc-editing'), a.dur + a.delay + 300);
   };
 
   $('#prop-delete').onclick = () => {
     const el = sel(); if (!el) return;
-    el.remove();
-    clearSelection();
-    snapshotNow();
+    el.remove(); clearSelection(); snapshotNow();
   };
-  $('#props-close').onclick = () => clearSelection();
+  $('#props-close').onclick = clearSelection;
 }
 
-/* ---------------- Modo ---------------- */
+/* =================================================
+   MODO
+   ================================================= */
 function setMode(mode) {
   state.mode = mode;
-  document.querySelectorAll('.tool').forEach((b) => {
-    if (b.id === 'btn-select' || b.id === 'btn-text') b.classList.remove('active');
-  });
+  $$('.tool').forEach((b) => b.classList.remove('active'));
   $(mode === 'select' ? '#btn-select' : '#btn-text').classList.add('active');
   const doc = $('#preview').contentDocument;
   if (!doc || !doc.body) return;
@@ -767,87 +907,283 @@ function setMode(mode) {
     doc.body.classList.remove('oc-text-mode');
     doc.body.classList.add('oc-select-mode');
     if (state.selectedEl) positionHandles(doc, state.selectedEl);
-    // Snapshot al salir del modo texto
     scheduleSnapshot();
   }
 }
 
-/* ---------------- Detección de menú ---------------- */
-function findNav(doc) {
-  const selectors = ['nav','[role="navigation"]','.navbar','.nav','.menu','.main-nav','.navigation','.site-nav','.topnav','.header-nav','.menu-principal','.navegacion'];
-  for (const s of selectors) { const el = doc.querySelector(s); if (el) return el; }
-  const header = doc.querySelector('header');
-  if (header && header.querySelector('a')) return header;
-  return null;
-}
-function getNavContainer(nav) { return nav ? (nav.querySelector('ul') || nav) : null; }
-function findNavInElement(root) {
-  const selectors = ['nav','[role="navigation"]','.navbar','.nav','.menu','.main-nav','.navigation','.site-nav','.topnav','.header-nav'];
-  for (const s of selectors) { const el = root.querySelector?.(s); if (el) return el; }
-  const header = root.querySelector?.('header');
-  if (header && header.querySelector('a')) return header;
-  if (root.tagName === 'HEADER' && root.querySelector('a')) return root;
-  return null;
+/* =================================================
+   DETECCIÓN DE MENÚS (header + footer, con submenús)
+   ================================================= */
+function detectMenus(doc) {
+  const menus = [];
+
+  // Header
+  const header = doc.querySelector('header') || doc.querySelector('[role="banner"]');
+  if (header) {
+    const navs = header.querySelectorAll('nav, [role="navigation"], ul');
+    const nav = pickBestNav(navs, header);
+    if (nav) menus.push({ id: 'header', label: 'Menú del header', el: nav });
+  }
+
+  // Footer
+  const footer = doc.querySelector('footer') || doc.querySelector('[role="contentinfo"]');
+  if (footer) {
+    const navs = footer.querySelectorAll('nav, [role="navigation"], ul');
+    const nav = pickBestNav(navs, footer);
+    if (nav) menus.push({ id: 'footer', label: 'Menú del footer', el: nav });
+  }
+
+  // Si no hay header/footer pero hay un nav suelto, usarlo como "menú principal"
+  if (!menus.length) {
+    const nav = doc.querySelector('nav, [role="navigation"]');
+    if (nav) menus.push({ id: 'main', label: 'Menú principal', el: nav });
+  }
+
+  return menus;
 }
 
-/* ---------------- Editor de menú ---------------- */
+function pickBestNav(navs, parent) {
+  if (!navs.length) return null;
+  // Priorizar <nav> sobre <ul>
+  let best = null, bestScore = -1;
+  navs.forEach((el) => {
+    if (!el.querySelector('a')) return;
+    let score = 0;
+    if (el.tagName === 'NAV') score += 10;
+    if (el.getAttribute('role') === 'navigation') score += 8;
+    // Más enlaces = mejor
+    score += Math.min(el.querySelectorAll('a').length, 10);
+    // Preferir el de menor profundidad
+    const depth = (() => { let d = 0, p = el; while (p && p !== parent) { d++; p = p.parentElement; } return d; })();
+    score -= depth * 0.5;
+    if (score > bestScore) { bestScore = score; best = el; }
+  });
+  return best;
+}
+
+function readMenuTree(navEl) {
+  // Devuelve array de items: { text, href, children: [...] }
+  const rootList = navEl.tagName === 'UL' || navEl.tagName === 'OL'
+    ? navEl
+    : navEl.querySelector('ul, ol') || navEl;
+
+  const items = [];
+  const topLis = rootList.children;
+  if (rootList.tagName === 'A') {
+    // nav > a (sin ul)
+    return [{ text: rootList.textContent.trim(), href: rootList.getAttribute('href') || '#', children: [] }];
+  }
+  for (const li of topLis) {
+    if (li.tagName !== 'LI') {
+      if (li.tagName === 'A') {
+        items.push({ text: li.textContent.trim(), href: li.getAttribute('href') || '#', children: [] });
+      }
+      continue;
+    }
+    const a = li.querySelector(':scope > a');
+    const subUl = li.querySelector(':scope > ul, :scope > ol');
+    const item = {
+      text: a ? a.textContent.trim() : (li.firstChild?.textContent?.trim() || 'Item'),
+      href: a ? (a.getAttribute('href') || '#') : '#',
+      children: subUl ? readMenuChildren(subUl) : []
+    };
+    items.push(item);
+  }
+  // Caso: <ul><a>...</a><a>...</a></ul> sin li
+  if (!items.length) {
+    [...rootList.querySelectorAll(':scope > a')].forEach((a) => {
+      items.push({ text: a.textContent.trim(), href: a.getAttribute('href') || '#', children: [] });
+    });
+  }
+  return items;
+}
+
+function readMenuChildren(ul) {
+  const items = [];
+  for (const li of ul.children) {
+    if (li.tagName !== 'LI') continue;
+    const a = li.querySelector(':scope > a');
+    const subUl = li.querySelector(':scope > ul, :scope > ol');
+    items.push({
+      text: a ? a.textContent.trim() : 'Item',
+      href: a ? (a.getAttribute('href') || '#') : '#',
+      children: subUl ? readMenuChildren(subUl) : []
+    });
+  }
+  return items;
+}
+
+function writeMenuTree(navEl, items, doc) {
+  const rootList = navEl.tagName === 'UL' || navEl.tagName === 'OL'
+    ? navEl
+    : navEl.querySelector('ul, ol') || navEl;
+
+  const isUl = rootList.tagName === 'UL' || rootList.tagName === 'OL';
+  rootList.innerHTML = '';
+
+  if (!isUl) {
+    // nav > a directo
+    items.forEach((item) => {
+      const a = doc.createElement('a');
+      a.textContent = item.text; a.setAttribute('href', item.href);
+      rootList.appendChild(a);
+    });
+    return;
+  }
+
+  items.forEach((item) => {
+    const li = doc.createElement('li');
+    const a = doc.createElement('a');
+    a.textContent = item.text; a.setAttribute('href', item.href);
+    li.appendChild(a);
+    if (item.children && item.children.length) {
+      const subUl = doc.createElement('ul');
+      item.children.forEach((child) => {
+        const childLi = doc.createElement('li');
+        const childA = doc.createElement('a');
+        childA.textContent = child.text; childA.setAttribute('href', child.href);
+        childLi.appendChild(childA);
+        if (child.children && child.children.length) {
+          const subSubUl = doc.createElement('ul');
+          child.children.forEach((g) => {
+            const gLi = doc.createElement('li');
+            const gA = doc.createElement('a');
+            gA.textContent = g.text; gA.setAttribute('href', g.href);
+            gLi.appendChild(gA); subSubUl.appendChild(gLi);
+          });
+          childLi.appendChild(subSubUl);
+        }
+        subUl.appendChild(childLi);
+      });
+      li.appendChild(subUl);
+    }
+    rootList.appendChild(li);
+  });
+}
+
+/* =================================================
+   MENÚ EDITOR (modal)
+   ================================================= */
+let navState = []; // [{ id, label, items: [...] }]
+
 function openNavEditor() {
   const doc = $('#preview').contentDocument;
-  const nav = findNav(doc);
-  if (!nav) state.navLinks = [];
-  else {
-    const container = getNavContainer(nav);
-    state.navLinks = [...container.querySelectorAll(':scope > a, :scope > li > a')].map((a) => ({
-      text: a.textContent.trim(), href: a.getAttribute('href') || '#'
-    }));
-  }
+  const menus = detectMenus(doc);
+  navState = menus.map((m) => ({
+    id: m.id,
+    label: m.label,
+    items: readMenuTree(m.el)
+  }));
   renderNavEditor();
   $('#nav-modal').hidden = false;
 }
+
 function renderNavEditor() {
-  const ul = $('#nav-list'); ul.innerHTML = '';
-  $('#nav-empty').hidden = state.navLinks.length > 0;
-  state.navLinks.forEach((link, i) => {
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <input type="text" data-field="text" placeholder="Texto" value="${escapeHtml(link.text)}" />
-      <input type="text" data-field="href" placeholder="enlace.html" value="${escapeHtml(link.href)}" />
-      <button data-act="up">↑</button><button data-act="down">↓</button><button data-act="del" class="del">✕</button>
+  const wrap = $('#nav-menus'); wrap.innerHTML = '';
+  if (!navState.length) {
+    wrap.innerHTML = '<div class="nav-group-empty">No se detectó ningún menú en esta página. Añade un &lt;nav&gt; o &lt;header&gt; y vuelve a intentarlo.</div>';
+    return;
+  }
+  navState.forEach((menu, mi) => {
+    const group = document.createElement('div');
+    group.className = 'nav-group';
+    group.innerHTML = `
+      <div class="nav-group-head">
+        <span class="nav-group-title">${escapeHtml(menu.label)}</span>
+        <button class="btn btn-sm" data-add="${mi}">+ Añadir item</button>
+      </div>
+      ${menu.items.length ? '<ul class="nav-tree" data-menu="' + mi + '"></ul>' : '<div class="nav-group-empty">Sin enlaces todavía</div>'}
     `;
-    li.querySelectorAll('input').forEach((inp) => {
-      inp.oninput = (e) => { state.navLinks[i][e.target.dataset.field] = e.target.value; applyNavToIframe(); };
-    });
-    li.querySelector('[data-act="up"]').onclick = () => { if (i === 0) return; [state.navLinks[i-1], state.navLinks[i]] = [state.navLinks[i], state.navLinks[i-1]]; renderNavEditor(); applyNavToIframe(); };
-    li.querySelector('[data-act="down"]').onclick = () => { if (i === state.navLinks.length - 1) return; [state.navLinks[i+1], state.navLinks[i]] = [state.navLinks[i], state.navLinks[i+1]]; renderNavEditor(); applyNavToIframe(); };
-    li.querySelector('[data-act="del"]').onclick = () => { state.navLinks.splice(i, 1); renderNavEditor(); applyNavToIframe(); };
+    const ul = group.querySelector('.nav-tree');
+    if (ul) renderNavItems(ul, menu.items, mi, []);
+    wrap.appendChild(group);
+  });
+  wrap.querySelectorAll('[data-add]').forEach((btn) => {
+    btn.onclick = () => {
+      const mi = parseInt(btn.dataset.add);
+      navState[mi].items.push({ text: 'Nuevo', href: '#', children: [] });
+      renderNavEditor();
+    };
+  });
+}
+
+function renderNavItems(ul, items, menuIdx, path) {
+  items.forEach((item, i) => {
+    const li = document.createElement('li');
+    const wrapper = document.createElement('div');
+    wrapper.className = 'nav-item';
+
+    const row = document.createElement('div');
+    row.className = 'nav-item-row';
+
+    const textInp = document.createElement('input');
+    textInp.type = 'text'; textInp.value = item.text; textInp.placeholder = 'Texto';
+    textInp.oninput = () => { item.text = textInp.value; };
+
+    const hrefInp = document.createElement('input');
+    hrefInp.type = 'text'; hrefInp.value = item.href; hrefInp.placeholder = 'enlace';
+    hrefInp.oninput = () => { item.href = hrefInp.value; };
+
+    const btnUp = document.createElement('button');
+    btnUp.className = 'nav-mini-btn'; btnUp.textContent = '↑'; btnUp.title = 'Subir';
+    btnUp.onclick = () => { if (i > 0) { [items[i-1], items[i]] = [items[i], items[i-1]]; renderNavEditor(); } };
+
+    const btnDown = document.createElement('button');
+    btnDown.className = 'nav-mini-btn'; btnDown.textContent = '↓'; btnDown.title = 'Bajar';
+    btnDown.onclick = () => { if (i < items.length - 1) { [items[i+1], items[i]] = [items[i], items[i+1]]; renderNavEditor(); } };
+
+    const btnChild = document.createElement('button');
+    btnChild.className = 'nav-mini-btn'; btnChild.textContent = '↳'; btnChild.title = 'Añadir subitem';
+    btnChild.onclick = () => {
+      item.children = item.children || [];
+      item.children.push({ text: 'Subitem', href: '#', children: [] });
+      renderNavEditor();
+    };
+
+    const btnDel = document.createElement('button');
+    btnDel.className = 'nav-mini-btn del'; btnDel.textContent = '✕'; btnDel.title = 'Eliminar';
+    btnDel.onclick = () => { items.splice(i, 1); renderNavEditor(); };
+
+    row.append(textInp, hrefInp, btnUp, btnDown, btnChild, btnDel);
+    wrapper.appendChild(row);
+
+    if (item.children && item.children.length) {
+      const subUl = document.createElement('ul');
+      subUl.className = 'nav-tree';
+      renderNavItems(subUl, item.children, menuIdx, [...path, i]);
+      wrapper.appendChild(subUl);
+    }
+
+    li.appendChild(wrapper);
     ul.appendChild(li);
   });
 }
-function applyNavToIframe() {
-  const doc = $('#preview').contentDocument; if (!doc) return;
-  let nav = findNav(doc);
-  if (!nav) {
-    if (!state.navLinks.length) return;
-    nav = doc.createElement('nav');
-    doc.body.insertBefore(nav, doc.body.firstChild);
-  }
-  let container = getNavContainer(nav);
-  if (!container) { container = doc.createElement('ul'); nav.appendChild(container); }
-  const isUl = container.tagName === 'UL';
-  container.innerHTML = '';
-  state.navLinks.forEach((l) => {
-    const a = doc.createElement('a');
-    a.textContent = l.text || 'Enlace'; a.setAttribute('href', l.href || '#');
-    if (isUl) { const li = doc.createElement('li'); li.appendChild(a); container.appendChild(li); }
-    else container.appendChild(a);
+
+function applyNavStateToIframe() {
+  const doc = $('#preview').contentDocument;
+  if (!doc) return;
+  const currentMenus = detectMenus(doc);
+  // Mapear por id
+  navState.forEach((menu) => {
+    const found = currentMenus.find((m) => m.id === menu.id);
+    if (found) writeMenuTree(found.el, menu.items, doc);
   });
 }
+
 async function saveNavChanges() {
   const applyAll = $('#nav-apply-all').checked;
-  const links = state.navLinks.map((l) => ({ ...l }));
   $('#nav-save').disabled = true;
-  try { await saveCurrent(true); toast('Menú de esta página guardado ✓', 'ok'); }
-  catch (err) { toast('Error: ' + err.message, 'error'); $('#nav-save').disabled = false; return; }
+
+  try {
+    // Aplicar en el iframe y guardar esta página
+    applyNavStateToIframe();
+    await saveCurrent(true);
+    toast('Menús guardados en esta página ✓', 'ok');
+  } catch (err) {
+    toast('Error: ' + err.message, 'error');
+    $('#nav-save').disabled = false;
+    return;
+  }
 
   if (applyAll) {
     const others = state.files.filter((f) => f.path !== state.filePath);
@@ -855,41 +1191,36 @@ async function saveNavChanges() {
     for (const f of others) {
       try {
         const { content, sha } = await getFile({ ...state, path: f.path });
-        const updated = replaceNavInHtml(content, links);
-        await putFile({ ...state, path: f.path, content: updated, sha, message: `Update menu in ${f.path} via OpenCanvas Studio` });
-        count++;
+        const updated = replaceMenusInHtml(content, navState);
+        if (updated !== content) {
+          await putFile({ ...state, path: f.path, content: updated, sha,
+            message: `Update menus in ${f.path} via OpenCanvas Studio` });
+          count++;
+        }
       } catch (e) { console.warn('No se pudo actualizar', f.path, e); }
     }
-    toast(`Menú aplicado a ${count + 1} páginas ✓`, 'ok');
-  } else toast('Menú guardado ✓', 'ok');
+    toast(`Menús aplicados a ${count + 1} páginas ✓`, 'ok');
+  }
 
   $('#nav-modal').hidden = true;
   $('#nav-save').disabled = false;
   await refreshFileList();
 }
-function replaceNavInHtml(html, links) {
+
+function replaceMenusInHtml(html, menus) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
-  let nav = findNav(doc);
-  if (!nav) {
-    if (!links.length) return html;
-    nav = doc.createElement('nav');
-    doc.body.insertBefore(nav, doc.body.firstChild);
-  }
-  let container = getNavContainer(nav);
-  if (!container) { container = doc.createElement('ul'); nav.appendChild(container); }
-  const isUl = container.tagName === 'UL';
-  container.innerHTML = '';
-  links.forEach((l) => {
-    const a = doc.createElement('a');
-    a.textContent = l.text || 'Enlace'; a.setAttribute('href', l.href || '#');
-    if (isUl) { const li = doc.createElement('li'); li.appendChild(a); container.appendChild(li); }
-    else container.appendChild(a);
+  const currentMenus = detectMenus(doc);
+  menus.forEach((menu) => {
+    const found = currentMenus.find((m) => m.id === menu.id);
+    if (found) writeMenuTree(found.el, menu.items, doc);
   });
   return '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
 }
 
-/* ---------------- Nueva página ---------------- */
+/* =================================================
+   NUEVA PÁGINA
+   ================================================= */
 function openPageModal() {
   $('#page-title').value = ''; $('#page-slug').value = '';
   $('#page-slug').dataset.touched = '';
@@ -912,10 +1243,16 @@ async function createPage() {
   const addToAll = $('#page-add-nav-all').checked;
   $('#page-create').disabled = true;
   toast('Creando página…');
+
   try {
-    const currentHtml = state.filePath ? (await getFile({ ...state, path: state.filePath })).content : defaultTemplate(title);
+    const currentHtml = state.filePath
+      ? (await getFile({ ...state, path: state.filePath })).content
+      : defaultTemplate(title);
+
     const newHtml = buildNewPage(title, currentHtml, addToCurrent ? { text: title, href: slug } : null);
-    await putFile({ ...state, path: slug, content: newHtml, message: `Create ${slug} via OpenCanvas Studio` });
+
+    await putFile({ ...state, path: slug, content: newHtml,
+      message: `Create ${slug} via OpenCanvas Studio` });
 
     if (addToAll) {
       const others = state.files.filter((f) => f.path !== slug);
@@ -923,27 +1260,34 @@ async function createPage() {
       for (const f of others) {
         try {
           const { content, sha } = await getFile({ ...state, path: f.path });
-          const updated = addLinkToNav(content, { text: title, href: slug });
+          const updated = addLinkToMenus(content, { text: title, href: slug });
           if (updated !== content) {
-            await putFile({ ...state, path: f.path, content: updated, sha, message: `Add ${slug} to menu via OpenCanvas Studio` });
+            await putFile({ ...state, path: f.path, content: updated, sha,
+              message: `Add ${slug} to menus via OpenCanvas Studio` });
             count++;
           }
         } catch (e) { console.warn('No se pudo actualizar', f.path, e); }
       }
-      toast(`Página creada y menú actualizado en ${count} páginas ✓`, 'ok');
+      toast(`Página creada y menús actualizados en ${count} páginas ✓`, 'ok');
     } else toast('Página creada ✓', 'ok');
 
     $('#page-modal').hidden = true;
     await refreshFileList();
     await openFile(slug);
-  } catch (err) { toast('Error al crear: ' + err.message, 'error'); }
-  finally { $('#page-create').disabled = false; }
+  } catch (err) {
+    toast('Error al crear: ' + err.message, 'error');
+  } finally { $('#page-create').disabled = false; }
 }
+
 function buildNewPage(title, currentHtml, navLink) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(currentHtml, 'text/html');
+
   const headParts = [];
-  doc.head.querySelectorAll('link[rel="stylesheet"], style:not([data-oc-injected])').forEach((el) => headParts.push(el.outerHTML));
+  doc.head.querySelectorAll('link[rel="stylesheet"], style:not([data-oc-injected])').forEach((el) => {
+    headParts.push(el.outerHTML);
+  });
+
   const header = doc.querySelector('header');
   const footer = doc.querySelector('footer');
   const lang = doc.documentElement.lang || 'es';
@@ -952,19 +1296,23 @@ function buildNewPage(title, currentHtml, navLink) {
   if (header) {
     const clone = header.cloneNode(true);
     if (navLink) {
-      const realNav = findNavInElement(clone);
-      if (realNav) {
-        const container = getNavContainer(realNav);
-        const isUl = container.tagName === 'UL';
-        const a = doc.createElement('a');
-        a.textContent = navLink.text; a.setAttribute('href', navLink.href);
-        if (isUl) { const li = doc.createElement('li'); li.appendChild(a); container.appendChild(li); }
-        else container.appendChild(a);
+      const navs = clone.querySelectorAll('nav, [role="navigation"], ul');
+      const nav = pickBestNav(navs, clone);
+      if (nav) {
+        const rootList = nav.tagName === 'UL' || nav.tagName === 'OL' ? nav : nav.querySelector('ul, ol') || nav;
+        if (rootList.tagName === 'UL' || rootList.tagName === 'OL') {
+          const li = doc.createElement('li');
+          const a = doc.createElement('a');
+          a.textContent = navLink.text; a.setAttribute('href', navLink.href);
+          li.appendChild(a);
+          rootList.appendChild(li);
+        }
       }
     }
     headerHtml = clone.outerHTML;
   }
   const footerHtml = footer ? footer.outerHTML : '';
+
   return `<!DOCTYPE html>
 <html lang="${lang}">
 <head>
@@ -983,56 +1331,85 @@ ${footerHtml}
 </body>
 </html>`;
 }
-function addLinkToNav(html, link) {
+
+function addLinkToMenus(html, link) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
-  const nav = findNav(doc);
-  if (!nav) return html;
-  const container = getNavContainer(nav);
-  const isUl = container.tagName === 'UL';
-  const exists = [...container.querySelectorAll('a')].some((a) => (a.getAttribute('href') || '') === link.href);
-  if (exists) return html;
-  const a = doc.createElement('a');
-  a.textContent = link.text; a.setAttribute('href', link.href);
-  if (isUl) { const li = doc.createElement('li'); li.appendChild(a); container.appendChild(li); }
-  else container.appendChild(a);
+  const menus = detectMenus(doc);
+  const header = menus.find((m) => m.id === 'header');
+  if (!header) return html;
+
+  const rootList = header.el.tagName === 'UL' || header.el.tagName === 'OL'
+    ? header.el
+    : header.el.querySelector('ul, ol') || header.el;
+
+  if (rootList.tagName === 'UL' || rootList.tagName === 'OL') {
+    const exists = [...rootList.querySelectorAll('a')].some((a) => (a.getAttribute('href') || '') === link.href);
+    if (exists) return html;
+    const li = doc.createElement('li');
+    const a = doc.createElement('a');
+    a.textContent = link.text; a.setAttribute('href', link.href);
+    li.appendChild(a);
+    rootList.appendChild(li);
+  }
   return '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
 }
+
 function defaultTemplate(title) {
   return `<!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${escapeHtml(title)}</title>
-<style>body{font-family:system-ui,sans-serif;max-width:760px;margin:0 auto;padding:40px 20px;line-height:1.6;color:#222}
-nav ul{list-style:none;padding:0;display:flex;gap:16px}nav a{text-decoration:none;color:#4c8bf5}</style>
-</head><body><header><nav><ul><li><a href="index.html">Inicio</a></li></ul></nav></header>
-<main><h1>${escapeHtml(title)}</h1><p>Escribe aquí el contenido de esta página.</p></main></body></html>`;
+<style>
+body{font-family:system-ui,sans-serif;max-width:760px;margin:0 auto;padding:40px 20px;line-height:1.6;color:#222}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:40px}
+nav ul{list-style:none;padding:0;display:flex;gap:16px;margin:0}
+nav a{text-decoration:none;color:#7c5cfc;font-weight:500}
+</style>
+</head>
+<body>
+<header>
+<nav><ul><li><a href="index.html">Inicio</a></li></ul></nav>
+</header>
+<main>
+<h1>${escapeHtml(title)}</h1>
+<p>Escribe aquí el contenido de esta página.</p>
+</main>
+</body>
+</html>`;
 }
 
-/* ---------------- Eliminar página ---------------- */
+/* =================================================
+   ELIMINAR PÁGINA
+   ================================================= */
 async function deletePage(path) {
   if (state.files.length <= 1) { toast('No puedes eliminar la única página', 'error'); return; }
-  if (!confirm(`¿Eliminar "${path}"? Esta acción no se puede deshacer.`)) return;
+  if (!confirm(`¿Eliminar "${nameFromPath(path)}"? Esta acción no se puede deshacer.`)) return;
   try {
     const { sha } = await getFile({ ...state, path });
     await deleteFile({ ...state, path, sha, message: `Delete ${path} via OpenCanvas Studio` });
     toast('Página eliminada', 'ok');
     if (state.filePath === path) {
-      state.filePath = null; state.fileSha = null; $('#preview').srcdoc = '';
+      state.filePath = null; state.fileSha = null;
+      $('#preview').srcdoc = '';
+      $('#canvas-empty').hidden = false;
     }
     await refreshFileList();
     if (!state.filePath && state.files.length) await openFile(state.files[0].path);
   } catch (err) { toast('Error al eliminar: ' + err.message, 'error'); }
 }
 
-/* ---------------- Serializar / Guardar ---------------- */
+/* =================================================
+   SERIALIZAR / GUARDAR
+   ================================================= */
 function serializeCurrentIframe() {
   const doc = $('#preview').contentDocument;
   if (!doc) return '';
   const clone = doc.documentElement.cloneNode(true);
-  // Quitar inyecciones del editor
   clone.querySelectorAll('[data-oc-injected]').forEach((el) => el.remove());
   clone.querySelector('#oc-handle-layer')?.remove();
-  // Quitar clases de selección/hover
   clone.querySelectorAll('.oc-selected,.oc-hover').forEach((el) => {
     el.classList.remove('oc-selected', 'oc-hover');
   });
@@ -1040,13 +1417,11 @@ function serializeCurrentIframe() {
     b.classList.remove('oc-text-mode','oc-select-mode','oc-editing');
   });
 
-  // Rebuild runtime styles solo con animaciones usadas
   const used = new Set();
   clone.querySelectorAll('[class*="oc-anim-"]').forEach((el) => {
     [...el.classList].forEach((c) => { if (c.startsWith('oc-anim-')) used.add(c.slice('oc-anim-'.length)); });
   });
-  const oldRt = clone.querySelector('#oc-runtime');
-  if (oldRt) oldRt.remove();
+  clone.querySelector('#oc-runtime')?.remove();
   if (used.size) {
     const style = doc.createElement('style');
     style.id = 'oc-runtime';
@@ -1086,7 +1461,9 @@ async function save() {
   finally { $('#btn-save').disabled = false; }
 }
 
-/* ---------------- Eventos ---------------- */
+/* =================================================
+   EVENTOS GLOBALES
+   ================================================= */
 $('#btn-connect').onclick = () => connect(false);
 $('#btn-logout').onclick = logout;
 $('#btn-save').onclick = save;
@@ -1098,11 +1475,29 @@ $('#btn-new-page').onclick = openPageModal;
 $('#sidebar-new').onclick = openPageModal;
 $('#btn-undo').onclick = undo;
 $('#btn-redo').onclick = redo;
-$('#file-select').onchange = (e) => { const p = e.target.value; if (p && p !== state.filePath) openFile(p); };
-$('#btn-sidebar').onclick = () => $('#sidebar').classList.toggle('collapsed');
+$('#file-select').onchange = (e) => {
+  const p = e.target.value;
+  if (p && p !== state.filePath) openFile(p);
+};
+
+$$('.device').forEach((btn) => {
+  btn.onclick = () => {
+    $$('.device').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.device = btn.dataset.device;
+    $('#canvas-frame').dataset.device = state.device;
+  };
+});
+
+$('#btn-more').onclick = (e) => {
+  e.stopPropagation();
+  const m = $('#more-menu');
+  m.hidden = !m.hidden;
+};
+document.addEventListener('click', () => { $('#more-menu').hidden = true; });
 
 $('#nav-close').onclick = () => { $('#nav-modal').hidden = true; };
-$('#nav-add').onclick = () => { state.navLinks.push({ text: 'Nueva', href: '#' }); renderNavEditor(); applyNavToIframe(); };
+$('#nav-cancel').onclick = () => { $('#nav-modal').hidden = true; };
 $('#nav-save').onclick = saveNavChanges;
 
 $('#page-close').onclick = () => { $('#page-modal').hidden = true; };
@@ -1114,7 +1509,7 @@ $('#page-title').oninput = () => {
 };
 $('#page-slug').oninput = () => { $('#page-slug').dataset.touched = '1'; };
 
-/* Atajos globales (fuera del iframe) */
+/* Atajos globales */
 window.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
     e.preventDefault(); undo();
@@ -1122,12 +1517,18 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault(); redo();
   } else if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
     e.preventDefault(); save();
+  } else if (e.key === 'v' || e.key === 'V') {
+    if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
+    setMode('select');
+  } else if (e.key === 't' || e.key === 'T') {
+    if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
+    setMode('text');
   }
 });
 
 bindPropsEvents();
 
-/* ---------------- Arranque ---------------- */
+/* Arranque */
 (async function boot() {
   const session = loadSession();
   if (session && session.token) {
