@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenCanvas Studio</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">◐</span>
+      <h1>OpenCanvas <span>Studio</span></h1>
+    </div>
+    <div class="actions">
+      <button id="btn-save" class="btn primary" disabled>Guardar</button>
+      <button id="btn-reload" class="btn" disabled>Recargar</button>
+      <button id="btn-logout" class="btn ghost" hidden>Salir</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Panel de conexión -->
+    <section id="connect-panel" class="connect">
+      <h2>Conecta tu repositorio</h2>
+      <p class="muted">
+        Usa un Personal Access Token con permiso <code>repo</code> o <code>public_repo</code>.
+        El token se guarda solo en tu navegador.
+      </p>
+      <label>Usuario / organización
+        <input id="inp-owner" placeholder="tu-usuario" />
+      </label>
+      <label>Repositorio
+        <input id="inp-repo" placeholder="mi-sitio" />
+      </label>
+      <label>Rama
+        <input id="inp-branch" placeholder="main" value="main" />
+      </label>
+      <label>Personal Access Token
+        <input id="inp-token" type="password" placeholder="ghp_..." />
+      </label>
+      <button id="btn-connect" class="btn primary">Conectar</button>
+      <p id="connect-msg" class="msg"></p>
+    </section>
+
+    <!-- Editor -->
+    <section id="editor-panel" class="editor" hidden>
+      <aside class="sidebar">
+        <h3>Archivos</h3>
+        <ul id="file-tree" class="file-tree"></ul>
+      </aside>
+      <div class="canvas">
+        <div class="toolbar">
+          <span id="current-file" class="muted">— sin archivo —</span>
+          <label class="toggle">
+            <input type="checkbox" id="chk-editable" checked />
+            Modo edición
+          </label>
+        </div>
+        <iframe id="preview" sandbox="allow-same-origin allow-scripts"></iframe>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
