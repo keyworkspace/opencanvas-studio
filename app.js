@@ -14,7 +14,8 @@ const state = {
   originalHtml: '',
   files: [],
   navLinks: [],
-  loading: false
+  loading: false,
+  stopInteraction: null
 };
 
 const STORAGE_KEY = 'opencanvas.session';
@@ -81,7 +82,6 @@ async function enterEditor() {
   $('#login').hidden = true;
   $('#editor').hidden = false;
   await refreshFileList();
-  // Auto-abrir la primera página
   if (state.files.length && !state.filePath) {
     await openFile(state.files[0].path);
   }
@@ -125,7 +125,6 @@ function renderSidebar() {
       <span class="name" title="${escapeHtml(f.path)}">${escapeHtml(f.path)}</span>
       <button class="del" title="Eliminar">✕</button>
     `;
-    // Todo el li es clickable
     li.onclick = () => {
       if (state.loading) return;
       if (f.path === state.filePath) return;
@@ -163,7 +162,6 @@ async function openFile(path) {
   if (state.loading) return;
   state.loading = true;
   try {
-    // Salir de modo texto por si acaso
     state.mode = 'select';
 
     const { content, sha } = await getFile({ ...state, path });
@@ -199,12 +197,12 @@ function renderHtml(html) {
     prepared = `<head>${baseTag}</head>${html}`;
   }
 
-  // Forzar recarga limpia del iframe
   const onLoad = () => {
     iframe.removeEventListener('load', onLoad);
     const doc = iframe.contentDocument;
     if (!doc || !doc.body) return;
     injectStyles(doc);
+    createHandleLayer(doc);
     installInspector(doc);
     setMode(state.mode);
   };
@@ -225,15 +223,98 @@ function injectStyles(doc) {
   doc.head.appendChild(style);
 }
 
+/* ---------------- Handles de redimensionado ---------------- */
+const HANDLE_SIZE = 12;
+
+function createHandleLayer(doc) {
+  if (doc.getElementById('oc-handle-layer')) return;
+  const layer = doc.createElement('div');
+  layer.id = 'oc-handle-layer';
+  layer.setAttribute('data-oc-injected', '');
+  layer.style.cssText =
+    'position:fixed;left:0;top:0;width:0;height:0;pointer-events:none;z-index:2147483647;';
+
+  const dirs = ['nw','n','ne','e','se','s','sw','w'];
+  const cursors = {
+    nw: 'nwse-resize', n: 'ns-resize', ne: 'nesw-resize', e: 'ew-resize',
+    se: 'nwse-resize', s: 'ns-resize', sw: 'nesw-resize', w: 'ew-resize'
+  };
+  dirs.forEach((d) => {
+    const h = doc.createElement('div');
+    h.className = 'oc-handle';
+    h.dataset.dir = d;
+    h.style.cssText = `
+      position: fixed;
+      width: ${HANDLE_SIZE}px;
+      height: ${HANDLE_SIZE}px;
+      margin-left: -${HANDLE_SIZE/2}px;
+      margin-top: -${HANDLE_SIZE/2}px;
+      background: #ffffff;
+      border: 2px solid #4c8bf5;
+      border-radius: 50%;
+      box-sizing: border-box;
+      pointer-events: auto;
+      display: none;
+      cursor: ${cursors[d]};
+      box-shadow: 0 1px 3px rgba(0,0,0,.35);
+    `;
+    layer.appendChild(h);
+  });
+  doc.body.appendChild(layer);
+}
+
+function positionHandles(doc, el) {
+  const layer = doc.getElementById('oc-handle-layer');
+  if (!layer) return;
+  const handles = layer.querySelectorAll('.oc-handle');
+
+  if (!el || state.mode !== 'select') {
+    handles.forEach((h) => (h.style.display = 'none'));
+    return;
+  }
+
+  const r = el.getBoundingClientRect();
+  const pos = {
+    nw: [r.left, r.top],
+    n:  [r.left + r.width / 2, r.top],
+    ne: [r.left + r.width, r.top],
+    e:  [r.left + r.width, r.top + r.height / 2],
+    se: [r.left + r.width, r.top + r.height],
+    s:  [r.left + r.width / 2, r.top + r.height],
+    sw: [r.left, r.top + r.height],
+    w:  [r.left, r.top + r.height / 2]
+  };
+  handles.forEach((h) => {
+    const [x, y] = pos[h.dataset.dir];
+    h.style.left = x + 'px';
+    h.style.top = y + 'px';
+    h.style.display = 'block';
+  });
+}
+
+function hideHandles(doc) {
+  const layer = doc.getElementById('oc-handle-layer');
+  if (!layer) return;
+  layer.querySelectorAll('.oc-handle').forEach((h) => (h.style.display = 'none'));
+}
+
 /* ---------------- Inspector ---------------- */
 function installInspector(doc) {
   let hoverEl = null;
   let dragging = null;
-  let startX = 0, startY = 0, origX = 0, origY = 0;
   let dragStarted = false;
+  let startX = 0, startY = 0, origX = 0, origY = 0;
+
+  let resizing = null;
+  let rsStartX = 0, rsStartY = 0;
+  let rsStartW = 0, rsStartH = 0;
+  let rsStartTx = 0, rsStartTy = 0;
 
   const isEditable = (el) =>
-    el && el.nodeType === 1 && el !== doc.body && el !== doc.documentElement;
+    el && el.nodeType === 1 &&
+    el !== doc.body && el !== doc.documentElement &&
+    !el.classList.contains('oc-handle') &&
+    !el.closest('#oc-handle-layer');
 
   const clearHover = () => {
     if (hoverEl) hoverEl.classList.remove('oc-hover');
@@ -245,15 +326,27 @@ function installInspector(doc) {
     state.selectedEl = el;
     if (el) el.classList.add('oc-selected');
     updatePropsPanel(el);
+    positionHandles(doc, el);
   };
 
+  const stop = () => {
+    if (dragging) dragging.style.willChange = '';
+    if (resizing) resizing.el.style.willChange = '';
+    dragging = null;
+    dragStarted = false;
+    resizing = null;
+  };
+  state.stopInteraction = stop;
+
+  /* Bloquear navegación */
   doc.addEventListener('click', (e) => {
     const a = e.target.closest('a');
     if (a) e.preventDefault();
   }, true);
 
+  /* HOVER */
   doc.addEventListener('mouseover', (e) => {
-    if (state.mode !== 'select' || dragging) return;
+    if (state.mode !== 'select' || dragging || resizing) return;
     const el = e.target;
     if (!isEditable(el) || el === state.selectedEl) return;
     clearHover();
@@ -265,21 +358,74 @@ function installInspector(doc) {
     clearHover();
   });
 
+  /* MOUSEDOWN */
   doc.addEventListener('mousedown', (e) => {
-    const el = e.target;
-    if (!isEditable(el)) return;
+    const target = e.target;
+
+    /* Resize: mousedown sobre un handle */
+    if (target.classList?.contains('oc-handle')) {
+      e.preventDefault();
+      e.stopPropagation();
+      const el = state.selectedEl;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      resizing = { el, dir: target.dataset.dir };
+      rsStartX = e.clientX;
+      rsStartY = e.clientY;
+      rsStartW = rect.width;
+      rsStartH = rect.height;
+      rsStartTx = parseFloat(el.dataset.ocX || '0');
+      rsStartTy = parseFloat(el.dataset.ocY || '0');
+      el.style.willChange = 'transform, width, height';
+      return;
+    }
+
+    if (!isEditable(target)) return;
     if (state.mode === 'text') return;
     if (e.button !== 0) return;
-    select(el);
-    dragging = el;
+
+    select(target);
+    dragging = target;
     dragStarted = false;
     startX = e.clientX;
     startY = e.clientY;
-    origX = parseFloat(el.dataset.ocX || '0');
-    origY = parseFloat(el.dataset.ocY || '0');
+    origX = parseFloat(target.dataset.ocX || '0');
+    origY = parseFloat(target.dataset.ocY || '0');
   });
 
+  /* MOUSEMOVE */
   doc.addEventListener('mousemove', (e) => {
+    /* Resize activo */
+    if (resizing) {
+      e.preventDefault();
+      const dx = e.clientX - rsStartX;
+      const dy = e.clientY - rsStartY;
+      const dir = resizing.dir;
+      const el = resizing.el;
+
+      let w = rsStartW, h = rsStartH;
+      let tx = rsStartTx, ty = rsStartTy;
+
+      if (dir.includes('e')) w = rsStartW + dx;
+      if (dir.includes('w')) { w = rsStartW - dx; tx = rsStartTx + dx; }
+      if (dir.includes('s')) h = rsStartH + dy;
+      if (dir.includes('n')) { h = rsStartH - dy; ty = rsStartTy + dy; }
+
+      w = Math.max(8, w);
+      h = Math.max(8, h);
+
+      el.style.width = w + 'px';
+      el.style.height = h + 'px';
+      el.dataset.ocX = tx;
+      el.dataset.ocY = ty;
+      el.style.transform = `translate(${tx}px, ${ty}px)`;
+
+      positionHandles(doc, el);
+      updatePropsPanel(el);
+      return;
+    }
+
+    /* Drag activo */
     if (!dragging) return;
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
@@ -296,14 +442,20 @@ function installInspector(doc) {
     dragging.dataset.ocY = y;
     dragging.style.transform = `translate(${x}px, ${y}px)`;
     updatePropsPanel(dragging);
+    positionHandles(doc, dragging);
   });
 
+  /* MOUSEUP */
   doc.addEventListener('mouseup', () => {
-    if (dragging) dragging.style.willChange = '';
-    dragging = null;
-    dragStarted = false;
+    stop();
   });
 
+  /* Si el usuario suelta fuera del iframe, el parent lo captura */
+  window.addEventListener('mouseup', () => {
+    if (state.stopInteraction) state.stopInteraction();
+  });
+
+  /* DOBLE CLIC → modo texto */
   doc.addEventListener('dblclick', (e) => {
     if (state.mode !== 'select') return;
     const el = e.target;
@@ -324,6 +476,7 @@ function installInspector(doc) {
     }, 0);
   });
 
+  /* TECLADO */
   doc.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && state.mode === 'text') {
       setMode('select');
@@ -351,7 +504,15 @@ function installInspector(doc) {
     el.dataset.ocY = y;
     el.style.transform = `translate(${x}px, ${y}px)`;
     updatePropsPanel(el);
+    positionHandles(doc, el);
   });
+
+  /* Scroll y resize del iframe → reposicionar handles */
+  const reposition = () => {
+    if (state.selectedEl) positionHandles(doc, state.selectedEl);
+  };
+  doc.defaultView?.addEventListener('scroll', reposition, { passive: true });
+  doc.defaultView?.addEventListener('resize', reposition);
 }
 
 /* ---------------- Panel de propiedades ---------------- */
@@ -392,11 +553,13 @@ function rgbToHex(rgb) {
 
 function bindPropsEvents() {
   const sel = () => state.selectedEl;
+  const doc = () => $('#preview').contentDocument;
 
   $('#prop-text').oninput = (e) => {
     const el = sel();
     if (!el || el.children.length > 0) return;
     el.textContent = e.target.value;
+    positionHandles(doc(), el);
   };
   $('#prop-x').oninput = (e) => {
     const el = sel(); if (!el) return;
@@ -404,6 +567,7 @@ function bindPropsEvents() {
     const x = parseFloat(el.dataset.ocX || '0');
     const y = parseFloat(el.dataset.ocY || '0');
     el.style.transform = `translate(${x}px, ${y}px)`;
+    positionHandles(doc(), el);
   };
   $('#prop-y').oninput = (e) => {
     const el = sel(); if (!el) return;
@@ -411,9 +575,18 @@ function bindPropsEvents() {
     const x = parseFloat(el.dataset.ocX || '0');
     const y = parseFloat(el.dataset.ocY || '0');
     el.style.transform = `translate(${x}px, ${y}px)`;
+    positionHandles(doc(), el);
   };
-  $('#prop-w').oninput = (e) => { const el = sel(); if (el) el.style.width = e.target.value + 'px'; };
-  $('#prop-h').oninput = (e) => { const el = sel(); if (el) el.style.height = e.target.value + 'px'; };
+  $('#prop-w').oninput = (e) => {
+    const el = sel(); if (!el) return;
+    el.style.width = e.target.value + 'px';
+    positionHandles(doc(), el);
+  };
+  $('#prop-h').oninput = (e) => {
+    const el = sel(); if (!el) return;
+    el.style.height = e.target.value + 'px';
+    positionHandles(doc(), el);
+  };
   $('#prop-bg').oninput = (e) => { const el = sel(); if (el) el.style.backgroundColor = e.target.value; };
   $('#prop-color').oninput = (e) => { const el = sel(); if (el) el.style.color = e.target.value; };
   $('#prop-delete').onclick = () => {
@@ -421,11 +594,13 @@ function bindPropsEvents() {
     el.remove();
     state.selectedEl = null;
     $('#props').hidden = true;
+    hideHandles(doc());
   };
   $('#props-close').onclick = () => {
     if (state.selectedEl) state.selectedEl.classList.remove('oc-selected');
     state.selectedEl = null;
     $('#props').hidden = true;
+    hideHandles(doc());
   };
 }
 
@@ -445,6 +620,7 @@ function setMode(mode) {
     doc.body.classList.add('oc-text-mode');
     doc.body.classList.remove('oc-select-mode');
     $('#props').hidden = true;
+    hideHandles(doc);
     if (state.selectedEl) {
       state.selectedEl.classList.remove('oc-selected');
       state.selectedEl = null;
@@ -453,14 +629,14 @@ function setMode(mode) {
     doc.designMode = 'off';
     doc.body.classList.remove('oc-text-mode');
     doc.body.classList.add('oc-select-mode');
+    if (state.selectedEl) positionHandles(doc, state.selectedEl);
   }
 }
 
 /* ---------------- Detección de menú ---------------- */
 function findNav(doc) {
   const selectors = [
-    'nav',
-    '[role="navigation"]',
+    'nav', '[role="navigation"]',
     '.navbar', '.nav', '.menu', '.main-nav', '.navigation',
     '.site-nav', '.topnav', '.header-nav', '.menu-principal', '.navegacion'
   ];
@@ -596,7 +772,7 @@ async function saveNavChanges() {
           ...state,
           path: f.path,
           content: updated,
-          sha, // <-- fix: sha explícito
+          sha,
           message: `Update menu in ${f.path} via OpenCanvas Studio`
         });
         count++;
@@ -684,7 +860,6 @@ async function createPage() {
       : defaultTemplate(title);
     const newHtml = buildNewPage(title, currentHtml, addToCurrent ? { text: title, href: slug } : null);
 
-    // Archivo nuevo: sin sha
     await putFile({
       ...state,
       path: slug,
@@ -704,7 +879,7 @@ async function createPage() {
               ...state,
               path: f.path,
               content: updated,
-              sha, // <-- fix: sha explícito
+              sha,
               message: `Add ${slug} to menu via OpenCanvas Studio`
             });
             count++;
@@ -885,10 +1060,15 @@ async function deletePage(path) {
 /* ---------------- Guardar ---------------- */
 function serializeCurrentIframe() {
   const doc = $('#preview').contentDocument;
-  let newContent = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
+  // Clonar para no tocar el DOM real
+  const clone = doc.documentElement.cloneNode(true);
+  // Quitar inyecciones del editor
+  clone.querySelectorAll('[data-oc-injected]').forEach((el) => el.remove());
+  clone.querySelector('#oc-handle-layer')?.remove();
+
+  let newContent = '<!DOCTYPE html>\n' + clone.outerHTML;
   newContent = newContent
     .replace(/<base[^>]*>\s*/i, '')
-    .replace(/<style[^>]*data-oc-injected[^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/\s*\boc-hover\b/g, '')
     .replace(/\s*\boc-selected\b/g, '')
     .replace(/\s*\boc-text-mode\b/g, '')
@@ -897,7 +1077,7 @@ function serializeCurrentIframe() {
     .replace(/\s*contenteditable="false"/g, '')
     .replace(/\s*data-oc-x="[^"]*"/g, '')
     .replace(/\s*data-oc-y="[^"]*"/g, '')
-    .replace(/\s*style="will-change: transform;?"/g, '');
+    .replace(/\s*style="will-change:\s*transform[^"]*"/g, '');
   return newContent;
 }
 
@@ -910,7 +1090,7 @@ async function saveCurrent(silent = false) {
     ...state,
     path: state.filePath,
     content: newContent,
-    sha: state.fileSha, // <-- FIX: pasar sha explícito
+    sha: state.fileSha,
     message: `Update ${state.filePath} via OpenCanvas Studio`
   });
   state.fileSha = res.content.sha;
