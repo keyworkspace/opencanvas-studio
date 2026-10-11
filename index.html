@@ -7,99 +7,227 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- ============ LOGIN ============ -->
   <div id="login" class="login">
     <div class="login-card">
-      <h1><span class="logo">◐</span> OpenCanvas <span>Studio</span></h1>
-      <p class="muted">Conecta tu repositorio de GitHub Pages para editar visualmente.</p>
-      <label>Usuario / organización <input id="inp-owner" placeholder="tu-usuario" /></label>
-      <label>Repositorio <input id="inp-repo" placeholder="mi-sitio" /></label>
-      <label>Rama <input id="inp-branch" value="main" /></label>
-      <label>Personal Access Token <input id="inp-token" type="password" placeholder="ghp_..." /></label>
-      <button id="btn-connect" class="btn primary">Conectar</button>
-      <p id="login-msg" class="msg"></p>
+      <div class="login-brand">
+        <div class="brand-mark">◐</div>
+        <h1>OpenCanvas <span>Studio</span></h1>
+        <p class="login-tag">Edita tu sitio de GitHub Pages sin tocar código.</p>
+      </div>
+      <div class="login-fields">
+        <label>
+          <span>Usuario u organización</span>
+          <input id="inp-owner" placeholder="tu-usuario" autocomplete="username" />
+        </label>
+        <label>
+          <span>Repositorio</span>
+          <input id="inp-repo" placeholder="mi-sitio" />
+        </label>
+        <div class="row-2">
+          <label>
+            <span>Rama</span>
+            <input id="inp-branch" value="main" />
+          </label>
+          <label>
+            <span>Token</span>
+            <input id="inp-token" type="password" placeholder="ghp_..." autocomplete="current-password" />
+          </label>
+        </div>
+      </div>
+      <button id="btn-connect" class="btn btn-primary btn-lg">Conectar</button>
+      <p id="login-msg" class="login-msg"></p>
+      <p class="login-help">
+        Necesitas un <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">Personal Access Token</a>
+        con permiso <code>repo</code>. Se guarda solo en tu navegador.
+      </p>
     </div>
   </div>
 
-  <div id="editor" class="editor" hidden>
-    <div class="toolbar">
-      <div class="toolbar-left">
-        <button id="btn-sidebar" class="btn" title="Mostrar/ocultar páginas">☰</button>
-        <span class="brand-mini">◐ OpenCanvas</span>
-        <select id="file-select" class="file-select"></select>
+  <!-- ============ EDITOR ============ -->
+  <div id="editor" class="app" hidden>
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="brand-mini">
+          <span class="brand-mark-sm">◐</span>
+          <span>OpenCanvas</span>
+        </div>
+        <div class="divider"></div>
+        <select id="file-select" class="select select-file" title="Cambiar página"></select>
       </div>
-      <div class="toolbar-right">
-        <button id="btn-select" class="btn tool active" title="Seleccionar y mover">✥ Mover</button>
-        <button id="btn-text" class="btn tool" title="Editar texto">✎ Texto</button>
-        <button id="btn-nav" class="btn tool" title="Editar menú del sitio">≡ Menú</button>
-        <button id="btn-new-page" class="btn tool" title="Nueva página">+ Página</button>
-        <button id="btn-undo" class="btn" title="Deshacer (Ctrl+Z)">↶</button>
-        <button id="btn-redo" class="btn" title="Rehacer (Ctrl+Y)">↷</button>
-        <button id="btn-reload" class="btn" title="Recargar archivo">↻</button>
-        <button id="btn-save" class="btn primary">Guardar</button>
-        <button id="btn-logout" class="btn ghost">Salir</button>
+      <div class="topbar-center">
+        <div class="tool-group" role="tablist">
+          <button id="btn-select" class="tool active" title="Mover (V)">✥<span>Mover</span></button>
+          <button id="btn-text" class="tool" title="Texto (T)">✎<span>Texto</span></button>
+        </div>
+        <div class="divider"></div>
+        <div class="device-group" role="tablist">
+          <button class="device active" data-device="desktop" title="Escritorio">🖥</button>
+          <button class="device" data-device="tablet" title="Tablet">📱</button>
+          <button class="device" data-device="mobile" title="Móvil">📲</button>
+        </div>
       </div>
-    </div>
+      <div class="topbar-right">
+        <button id="btn-undo" class="btn btn-icon" title="Deshacer (Ctrl+Z)" disabled>↶</button>
+        <button id="btn-redo" class="btn btn-icon" title="Rehacer (Ctrl+Y)" disabled>↷</button>
+        <button id="btn-nav" class="btn" title="Menús del sitio">≡ Menús</button>
+        <button id="btn-new-page" class="btn" title="Nueva página">+ Página</button>
+        <button id="btn-reload" class="btn btn-icon" title="Recargar">↻</button>
+        <button id="btn-save" class="btn btn-primary" title="Guardar (Ctrl+S)">Guardar</button>
+        <button id="btn-more" class="btn btn-icon" title="Más opciones">⋯</button>
+        <div id="more-menu" class="dropdown" hidden>
+          <button id="btn-logout">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
 
+    <!-- Workspace -->
     <div class="workspace">
+      <!-- Sidebar -->
       <aside id="sidebar" class="sidebar">
-        <div class="sidebar-head">
-          <span>Páginas</span>
-          <button id="sidebar-new" class="btn ghost small" title="Nueva página">+</button>
+        <div class="sidebar-section">
+          <div class="sidebar-title">
+            <span>Páginas</span>
+            <button id="sidebar-new" class="btn-icon-sm" title="Nueva página">+</button>
+          </div>
+          <ul id="pages-list" class="pages-list"></ul>
         </div>
-        <ul id="pages-list" class="pages-list"></ul>
+        <div class="sidebar-section">
+          <div class="sidebar-title"><span>Atajos</span></div>
+          <ul class="shortcuts">
+            <li><kbd>Ctrl</kbd>+<kbd>Z</kbd><span>Deshacer</span></li>
+            <li><kbd>Ctrl</kbd>+<kbd>Y</kbd><span>Rehacer</span></li>
+            <li><kbd>Ctrl</kbd>+<kbd>S</kbd><span>Guardar</span></li>
+            <li><kbd>V</kbd><span>Modo mover</span></li>
+            <li><kbd>T</kbd><span>Modo texto</span></li>
+            <li><kbd>Esc</kbd><span>Salir del texto</span></li>
+            <li><kbd>Del</kbd><span>Eliminar elemento</span></li>
+          </ul>
+        </div>
       </aside>
-      <iframe id="preview" class="preview"></iframe>
-    </div>
 
-    <div id="props" class="props" hidden>
-      <div class="props-header">
-        <span id="props-title">Elemento</span>
-        <button id="props-close" class="btn ghost small">✕</button>
-      </div>
-      <div class="props-body">
-        <label>Texto
-          <textarea id="prop-text" rows="2"></textarea>
-        </label>
-        <div class="grid-2">
-          <label>X <input id="prop-x" type="number" /></label>
-          <label>Y <input id="prop-y" type="number" /></label>
+      <!-- Canvas -->
+      <main class="canvas">
+        <div class="canvas-frame" id="canvas-frame">
+          <iframe id="preview" class="preview"></iframe>
         </div>
-        <div class="grid-2">
-          <label>Ancho <input id="prop-w" type="number" /></label>
-          <label>Alto <input id="prop-h" type="number" /></label>
+        <div id="canvas-empty" class="canvas-empty">
+          <div class="empty-icon">◐</div>
+          <p>Selecciona una página para empezar</p>
         </div>
-        <label>Color de fondo <input id="prop-bg" type="color" /></label>
-        <label>Color de texto <input id="prop-color" type="color" /></label>
+      </main>
 
-        <div class="section">
-          <label class="check">
-            <input type="checkbox" id="prop-grad-use" />
-            Usar degradado
+      <!-- Properties -->
+      <aside id="props" class="props" hidden>
+        <div class="props-head">
+          <div class="props-head-info">
+            <span class="props-tag" id="props-title">Elemento</span>
+          </div>
+          <button id="props-close" class="btn-icon-sm" title="Cerrar">✕</button>
+        </div>
+
+        <div class="props-tabs">
+          <button class="tab active" data-tab="content">Contenido</button>
+          <button class="tab" data-tab="style">Estilo</button>
+          <button class="tab" data-tab="effects">Efectos</button>
+        </div>
+
+        <!-- Tab: Contenido -->
+        <div class="props-body" data-panel="content">
+          <label class="field">
+            <span>Texto</span>
+            <textarea id="prop-text" rows="3" placeholder="Escribe el texto…"></textarea>
           </label>
-          <div id="prop-grad-fields" class="grad-fields" hidden>
-            <div class="grid-2">
-              <label>Tipo
-                <select id="prop-grad-type">
-                  <option value="linear">Lineal</option>
-                  <option value="radial">Radial</option>
-                </select>
-              </label>
-              <label>Ángulo <input id="prop-grad-angle" type="number" value="135" min="-360" max="360" /></label>
+          <div class="field">
+            <span>Posición</span>
+            <div class="input-group">
+              <label class="mini"><span>X</span><input id="prop-x" type="number" /></label>
+              <label class="mini"><span>Y</span><input id="prop-y" type="number" /></label>
             </div>
-            <div class="grid-2">
-              <label>Color 1 <input id="prop-grad-c1" type="color" value="#4c8bf5" /></label>
-              <label>Color 2 <input id="prop-grad-c2" type="color" value="#6ee7a8" /></label>
+          </div>
+          <div class="field">
+            <span>Tamaño</span>
+            <div class="input-group">
+              <label class="mini"><span>An</span><input id="prop-w" type="number" /></label>
+              <label class="mini"><span>Al</span><input id="prop-h" type="number" /></label>
             </div>
-            <div class="grad-preview" id="prop-grad-preview"></div>
-            <label class="check">
+          </div>
+          <button id="prop-delete" class="btn btn-danger btn-block">Eliminar elemento</button>
+        </div>
+
+        <!-- Tab: Estilo -->
+        <div class="props-body" data-panel="style" hidden>
+          <label class="field">
+            <span>Color de fondo</span>
+            <div class="color-row">
+              <input id="prop-bg" type="color" />
+              <input id="prop-bg-hex" type="text" class="hex-input" placeholder="#ffffff" />
+            </div>
+          </label>
+          <label class="field">
+            <span>Color de texto</span>
+            <div class="color-row">
+              <input id="prop-color" type="color" />
+              <input id="prop-color-hex" type="text" class="hex-input" placeholder="#000000" />
+            </div>
+          </label>
+
+          <div class="field-sep"></div>
+
+          <label class="switch">
+            <input type="checkbox" id="prop-grad-use" />
+            <span class="switch-track"></span>
+            <span class="switch-label">Usar degradado</span>
+          </label>
+
+          <div id="prop-grad-fields" hidden>
+            <div class="field">
+              <span>Tipo</span>
+              <div class="segmented">
+                <button class="seg" data-grad-type="linear">Lineal</button>
+                <button class="seg" data-grad-type="radial">Radial</button>
+                <button class="seg" data-grad-type="conic">Cónico</button>
+              </div>
+            </div>
+            <div class="field" id="grad-angle-wrap">
+              <span>Ángulo</span>
+              <input id="prop-grad-angle" type="range" min="0" max="360" value="135" />
+              <span class="range-val"><span id="grad-angle-val">135</span>°</span>
+            </div>
+            <div class="field">
+              <span>Colores del degradado</span>
+              <div id="grad-stops" class="grad-stops"></div>
+              <div class="grad-preview" id="prop-grad-preview"></div>
+              <button class="btn btn-sm btn-block" id="grad-add-stop">+ Añadir color</button>
+            </div>
+            <div class="preset-row">
+              <span class="preset-label">Presets:</span>
+              <div class="preset-chips">
+                <button class="preset-chip" data-preset="rainbow" title="Arcoíris"></button>
+                <button class="preset-chip" data-preset="pride" title="Pride"></button>
+                <button class="preset-chip" data-preset="trans" title="Trans"></button>
+                <button class="preset-chip" data-preset="bi" title="Bi"></button>
+                <button class="preset-chip" data-preset="pan" title="Pan"></button>
+                <button class="preset-chip" data-preset="nonbinary" title="No binario"></button>
+                <button class="preset-chip" data-preset="sunset" title="Sunset"></button>
+                <button class="preset-chip" data-preset="ocean" title="Océano"></button>
+                <button class="preset-chip" data-preset="fire" title="Fuego"></button>
+                <button class="preset-chip" data-preset="pastel" title="Pastel"></button>
+              </div>
+            </div>
+            <label class="switch">
               <input type="checkbox" id="prop-grad-text" />
-              Texto con degradado
+              <span class="switch-track"></span>
+              <span class="switch-label">Aplicar al texto</span>
             </label>
           </div>
         </div>
 
-        <div class="section">
-          <label>Animación de entrada
+        <!-- Tab: Efectos -->
+        <div class="props-body" data-panel="effects" hidden>
+          <label class="field">
+            <span>Animación de entrada</span>
             <select id="prop-anim-name">
               <option value="">— ninguna —</option>
               <option value="fade-in">Fade In</option>
@@ -114,67 +242,72 @@
               <option value="pulse">Pulse (loop)</option>
             </select>
           </label>
-          <div class="grid-2">
-            <label>Duración (ms) <input id="prop-anim-dur" type="number" value="600" min="100" step="100" /></label>
-            <label>Retardo (ms) <input id="prop-anim-delay" type="number" value="0" min="0" step="100" /></label>
+          <div class="input-group">
+            <label class="mini"><span>Dur (ms)</span><input id="prop-anim-dur" type="number" value="600" step="100" /></label>
+            <label class="mini"><span>Ret (ms)</span><input id="prop-anim-delay" type="number" value="0" step="100" /></label>
           </div>
-          <button class="btn small" id="prop-anim-play">▶ Reproducir</button>
+          <button class="btn btn-sm btn-block" id="prop-anim-play">▶ Reproducir animación</button>
         </div>
-
-        <button id="prop-delete" class="btn danger">Eliminar elemento</button>
-      </div>
+      </aside>
     </div>
 
+    <!-- ============ MODAL: MENÚS ============ -->
     <div id="nav-modal" class="modal" hidden>
-      <div class="modal-card">
+      <div class="modal-card modal-lg">
         <div class="modal-head">
-          <h2>Editor de menú</h2>
-          <button class="btn ghost small" id="nav-close">✕</button>
+          <div>
+            <h2>Menús del sitio</h2>
+            <p class="modal-sub">Detecta header y footer. Soporta submenús anidados.</p>
+          </div>
+          <button class="btn-icon-sm" id="nav-close">✕</button>
         </div>
         <div class="modal-body">
-          <p class="muted">Edita los enlaces del menú. Los cambios se ven al instante en la vista previa.</p>
-          <div id="nav-empty" class="empty" hidden>
-            No se encontró un menú en esta página. Pulsa "+ Añadir enlace" para crear uno.
-          </div>
-          <ul id="nav-list" class="nav-list"></ul>
-          <button class="btn" id="nav-add">+ Añadir enlace</button>
+          <div id="nav-menus" class="nav-menus"></div>
         </div>
         <div class="modal-foot">
-          <label class="check">
+          <label class="switch">
             <input type="checkbox" id="nav-apply-all" />
-            Aplicar también a todas las demás páginas
+            <span class="switch-track"></span>
+            <span class="switch-label">Aplicar a todas las páginas</span>
           </label>
-          <button class="btn primary" id="nav-save">Guardar cambios</button>
+          <div>
+            <button class="btn" id="nav-cancel">Cancelar</button>
+            <button class="btn btn-primary" id="nav-save">Guardar cambios</button>
+          </div>
         </div>
       </div>
     </div>
 
+    <!-- ============ MODAL: NUEVA PÁGINA ============ -->
     <div id="page-modal" class="modal" hidden>
       <div class="modal-card">
         <div class="modal-head">
           <h2>Nueva página</h2>
-          <button class="btn ghost small" id="page-close">✕</button>
+          <button class="btn-icon-sm" id="page-close">✕</button>
         </div>
         <div class="modal-body">
-          <label>Título de la página
+          <label class="field">
+            <span>Título</span>
             <input id="page-title" placeholder="Sobre mí" />
           </label>
-          <label>Nombre del archivo
+          <label class="field">
+            <span>Nombre del archivo</span>
             <input id="page-slug" placeholder="sobre-mi.html" />
           </label>
-          <label class="check">
+          <label class="switch">
             <input type="checkbox" id="page-add-nav" checked />
-            Añadir al menú de esta página
+            <span class="switch-track"></span>
+            <span class="switch-label">Añadir al menú de esta página</span>
           </label>
-          <label class="check">
+          <label class="switch">
             <input type="checkbox" id="page-add-nav-all" checked />
-            Añadir al menú de todas las demás páginas
+            <span class="switch-track"></span>
+            <span class="switch-label">Añadir al menú de todas las páginas</span>
           </label>
-          <p class="muted">Se creará el archivo y se hará commit a GitHub.</p>
         </div>
         <div class="modal-foot">
           <button class="btn" id="page-cancel">Cancelar</button>
-          <button class="btn primary" id="page-create">Crear página</button>
+          <button class="btn btn-primary" id="page-create">Crear página</button>
         </div>
       </div>
     </div>
