@@ -9,7 +9,7 @@ const state = {
   token: '',
   filePath: null,
   fileSha: null,
-  mode: 'select',       // 'select' | 'text'
+  mode: 'select',
   selectedEl: null,
   originalHtml: ''
 };
@@ -139,14 +139,23 @@ async function openFile(path) {
 function renderHtml(html) {
   const iframe = $('#preview');
   const doc = iframe.contentDocument;
-  doc.open();
-  doc.write(html);
-  doc.close();
 
-  // Base: los recursos relativos apuntan al sitio live de GitHub Pages
-  const base = doc.createElement('base');
-  base.href = `https://${state.owner}.github.io/${state.repo}/`;
-  doc.head.insertBefore(base, doc.head.firstChild);
+  const baseUrl = `https://${state.owner}.github.io/${state.repo}/`;
+  const baseTag = `<base href="${baseUrl}">`;
+
+  // Insertar <base> como PRIMER elemento dentro de <head>
+  let prepared;
+  if (/<head[^>]*>/i.test(html)) {
+    prepared = html.replace(/<head([^>]*)>/i, `<head$1>${baseTag}`);
+  } else if (/<html[^>]*>/i.test(html)) {
+    prepared = html.replace(/<html([^>]*)>/i, `<html$1><head>${baseTag}</head>`);
+  } else {
+    prepared = `<head>${baseTag}</head>${html}`;
+  }
+
+  doc.open();
+  doc.write(prepared);
+  doc.close();
 
   injectInspectorStyles(doc);
   installInspector(doc);
@@ -200,7 +209,6 @@ function installInspector(doc) {
     e.preventDefault();
 
     if (state.mode === 'text') {
-      // Salir de cualquier otro contenteditable
       doc.querySelectorAll('[contenteditable="true"]').forEach((n) => {
         if (n !== el) n.contentEditable = 'false';
       });
@@ -380,7 +388,7 @@ async function save() {
   const doc = $('#preview').contentDocument;
   let newContent = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
 
-  // Limpieza
+  // Limpieza de inyecciones del editor
   newContent = newContent
     .replace(/<base[^>]*>\s*/i, '')
     .replace(/<style[^>]*data-oc-injected[^>]*>[\s\S]*?<\/style>/gi, '')
