@@ -13,7 +13,8 @@ const state = {
   selectedEl: null,
   originalHtml: '',
   files: [],
-  navLinks: []
+  navLinks: [],
+  loading: false
 };
 
 const STORAGE_KEY = 'opencanvas.session';
@@ -80,6 +81,10 @@ async function enterEditor() {
   $('#login').hidden = true;
   $('#editor').hidden = false;
   await refreshFileList();
+  // Auto-abrir la primera página
+  if (state.files.length && !state.filePath) {
+    await openFile(state.files[0].path);
+  }
 }
 
 function logout() {
@@ -87,7 +92,7 @@ function logout() {
   Object.assign(state, {
     owner: '', repo: '', branch: 'main', token: '',
     filePath: null, fileSha: null, selectedEl: null, originalHtml: '',
-    files: [], navLinks: []
+    files: [], navLinks: [], loading: false
   });
   $('#editor').hidden = true;
   $('#login').hidden = false;
@@ -106,7 +111,6 @@ async function refreshFileList() {
       if (b.path === 'index.html') return 1;
       return a.path.localeCompare(b.path);
     });
-
   renderSidebar();
   renderFileSelect();
 }
@@ -121,7 +125,12 @@ function renderSidebar() {
       <span class="name" title="${escapeHtml(f.path)}">${escapeHtml(f.path)}</span>
       <button class="del" title="Eliminar">✕</button>
     `;
-    li.querySelector('.name').onclick = () => openFile(f.path);
+    // Todo el li es clickable
+    li.onclick = () => {
+      if (state.loading) return;
+      if (f.path === state.filePath) return;
+      openFile(f.path);
+    };
     li.querySelector('.del').onclick = (e) => {
       e.stopPropagation();
       deletePage(f.path);
@@ -151,27 +160,33 @@ function renderFileSelect() {
 
 /* ---------------- Abrir archivo ---------------- */
 async function openFile(path) {
+  if (state.loading) return;
+  state.loading = true;
   try {
+    // Salir de modo texto por si acaso
+    state.mode = 'select';
+
     const { content, sha } = await getFile({ ...state, path });
     state.filePath = path;
     state.fileSha = sha;
     state.originalHtml = content;
     state.selectedEl = null;
     $('#props').hidden = true;
+
     renderSidebar();
     renderFileSelect();
     renderHtml(content);
     toast('Cargado: ' + path, 'ok');
   } catch (err) {
     toast('Error al abrir: ' + err.message, 'error');
+  } finally {
+    state.loading = false;
   }
 }
 
-/* ---------------- Render ---------------- */
+/* ---------------- Render con srcdoc ---------------- */
 function renderHtml(html) {
   const iframe = $('#preview');
-  const doc = iframe.contentDocument;
-
   const baseUrl = `https://${state.owner}.github.io/${state.repo}/`;
   const baseTag = `<base href="${baseUrl}">`;
 
@@ -184,13 +199,17 @@ function renderHtml(html) {
     prepared = `<head>${baseTag}</head>${html}`;
   }
 
-  doc.open();
-  doc.write(prepared);
-  doc.close();
-
-  injectStyles(doc);
-  installInspector(doc);
-  setMode(state.mode);
+  // Forzar recarga limpia del iframe
+  const onLoad = () => {
+    iframe.removeEventListener('load', onLoad);
+    const doc = iframe.contentDocument;
+    if (!doc || !doc.body) return;
+    injectStyles(doc);
+    installInspector(doc);
+    setMode(state.mode);
+  };
+  iframe.addEventListener('load', onLoad);
+  iframe.srcdoc = prepared;
 }
 
 function injectStyles(doc) {
@@ -449,7 +468,6 @@ function findNav(doc) {
     const el = doc.querySelector(s);
     if (el) return el;
   }
-  // Como último recurso, un <header> que contenga al menos un <a>
   const header = doc.querySelector('header');
   if (header && header.querySelector('a')) return header;
   return null;
@@ -525,7 +543,6 @@ function applyNavToIframe() {
   if (!doc) return;
   let nav = findNav(doc);
 
-  // Si no hay nav, creamos uno al inicio del body
   if (!nav) {
     if (state.navLinks.length === 0) return;
     nav = doc.createElement('nav');
@@ -558,10 +575,9 @@ async function saveNavChanges() {
   const applyAll = $('#nav-apply-all').checked;
   const links = state.navLinks.map((l) => ({ ...l }));
 
-  // 1) Guardar la página actual desde el iframe
   $('#nav-save').disabled = true;
   try {
-    await saveCurrent(true); // silent
+    await saveCurrent(true);
     toast('Menú de esta página guardado ✓', 'ok');
   } catch (err) {
     toast('Error guardando esta página: ' + err.message, 'error');
@@ -569,7 +585,6 @@ async function saveNavChanges() {
     return;
   }
 
-  // 2) Aplicar a las demás
   if (applyAll) {
     const others = state.files.filter((f) => f.path !== state.filePath);
     let count = 0;
@@ -578,7 +593,10 @@ async function saveNavChanges() {
         const { content, sha } = await getFile({ ...state, path: f.path });
         const updated = replaceNavInHtml(content, links);
         await putFile({
-          ...state, path: f.path, content: updated, sha,
+          ...state,
+          path: f.path,
+          content: updated,
+          sha, // <-- fix: sha explícito
           message: `Update menu in ${f.path} via OpenCanvas Studio`
         });
         count++;
@@ -631,6 +649,7 @@ function replaceNavInHtml(html, links) {
 function openPageModal() {
   $('#page-title').value = '';
   $('#page-slug').value = '';
+  $('#page-slug').dataset.touched = '';
   $('#page-modal').hidden = false;
   $('#page-title').focus();
 }
@@ -660,16 +679,19 @@ async function createPage() {
   toast('Creando página…');
 
   try {
-    // 1) Construir HTML de la nueva página a partir de la actual
     const currentHtml = state.filePath
       ? (await getFile({ ...state, path: state.filePath })).content
       : defaultTemplate(title);
     const newHtml = buildNewPage(title, currentHtml, addToCurrent ? { text: title, href: slug } : null);
 
-    // 2) Crear el archivo
-    await putFile({ ...state, path: slug, content: newHtml, message: `Create ${slug} via OpenCanvas Studio` });
+    // Archivo nuevo: sin sha
+    await putFile({
+      ...state,
+      path: slug,
+      content: newHtml,
+      message: `Create ${slug} via OpenCanvas Studio`
+    });
 
-    // 3) Actualizar menús de otras páginas si procede
     if (addToAll) {
       const others = state.files.filter((f) => f.path !== slug);
       let count = 0;
@@ -679,7 +701,10 @@ async function createPage() {
           const updated = addLinkToNav(content, { text: title, href: slug });
           if (updated !== content) {
             await putFile({
-              ...state, path: f.path, content: updated, sha,
+              ...state,
+              path: f.path,
+              content: updated,
+              sha, // <-- fix: sha explícito
               message: `Add ${slug} to menu via OpenCanvas Studio`
             });
             count++;
@@ -716,12 +741,10 @@ function buildNewPage(title, currentHtml, navLink) {
   const footer = doc.querySelector('footer');
   const lang = doc.documentElement.lang || 'es';
 
-  // Clonamos el header para añadir el link al nav si aplica
   let headerHtml = '';
   if (header) {
     const clone = header.cloneNode(true);
     if (navLink) {
-      const nav = findNav({ querySelector: (s) => clone.matches?.(s) ? clone : clone.querySelector(s), querySelectorAll: () => [] });
       const realNav = findNavInElement(clone);
       if (realNav) {
         const container = getNavContainer(realNav);
@@ -784,7 +807,6 @@ function addLinkToNav(html, link) {
   if (!nav) return html;
   const container = getNavContainer(nav);
   const isUl = container.tagName === 'UL';
-  // No duplicar
   const exists = [...container.querySelectorAll('a')].some(
     (a) => (a.getAttribute('href') || '') === link.href
   );
@@ -881,9 +903,14 @@ function serializeCurrentIframe() {
 
 async function saveCurrent(silent = false) {
   if (!state.filePath) return;
+  if (!state.fileSha) throw new Error('No hay SHA. Recarga la página primero.');
+
   const newContent = serializeCurrentIframe();
   const res = await putFile({
-    ...state, path: state.filePath, content: newContent,
+    ...state,
+    path: state.filePath,
+    content: newContent,
+    sha: state.fileSha, // <-- FIX: pasar sha explícito
     message: `Update ${state.filePath} via OpenCanvas Studio`
   });
   state.fileSha = res.content.sha;
@@ -914,7 +941,10 @@ $('#btn-nav').onclick = openNavEditor;
 $('#btn-new-page').onclick = openPageModal;
 $('#sidebar-new').onclick = openPageModal;
 $('#btn-undo').onclick = () => { if (state.originalHtml) renderHtml(state.originalHtml); };
-$('#file-select').onchange = (e) => openFile(e.target.value);
+$('#file-select').onchange = (e) => {
+  const path = e.target.value;
+  if (path && path !== state.filePath) openFile(path);
+};
 $('#btn-sidebar').onclick = () => $('#sidebar').classList.toggle('collapsed');
 
 /* Modal menú */
