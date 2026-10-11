@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Pantalla de login (solo si no hay sesión) -->
   <div id="login" class="login">
     <div class="login-card">
       <h1><span class="logo">◐</span> OpenCanvas <span>Studio</span></h1>
@@ -21,16 +20,18 @@
     </div>
   </div>
 
-  <!-- Editor a pantalla completa -->
   <div id="editor" class="editor" hidden>
     <div class="toolbar">
       <div class="toolbar-left">
+        <button id="btn-sidebar" class="btn" title="Mostrar/ocultar páginas">☰</button>
         <span class="brand-mini">◐ OpenCanvas</span>
         <select id="file-select" class="file-select"></select>
       </div>
       <div class="toolbar-right">
         <button id="btn-select" class="btn tool active" title="Seleccionar y mover">✥ Mover</button>
         <button id="btn-text" class="btn tool" title="Editar texto">✎ Texto</button>
+        <button id="btn-nav" class="btn tool" title="Editar menú del sitio">≡ Menú</button>
+        <button id="btn-new-page" class="btn tool" title="Nueva página">+ Página</button>
         <button id="btn-undo" class="btn" title="Deshacer cambios locales">↶</button>
         <button id="btn-reload" class="btn" title="Recargar archivo">↻</button>
         <button id="btn-save" class="btn primary">Guardar</button>
@@ -38,7 +39,16 @@
       </div>
     </div>
 
-    <iframe id="preview" class="preview"></iframe>
+    <div class="workspace">
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-head">
+          <span>Páginas</span>
+          <button id="sidebar-new" class="btn ghost small" title="Nueva página">+</button>
+        </div>
+        <ul id="pages-list" class="pages-list"></ul>
+      </aside>
+      <iframe id="preview" class="preview"></iframe>
+    </div>
 
     <div id="props" class="props" hidden>
       <div class="props-header">
@@ -60,6 +70,62 @@
         <label>Color de fondo <input id="prop-bg" type="color" /></label>
         <label>Color de texto <input id="prop-color" type="color" /></label>
         <button id="prop-delete" class="btn danger">Eliminar elemento</button>
+      </div>
+    </div>
+
+    <!-- Modal: Editor de menú -->
+    <div id="nav-modal" class="modal" hidden>
+      <div class="modal-card">
+        <div class="modal-head">
+          <h2>Editor de menú</h2>
+          <button class="btn ghost small" id="nav-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="muted">Edita los enlaces del menú. Los cambios se ven al instante en la vista previa.</p>
+          <div id="nav-empty" class="empty" hidden>
+            No se encontró un menú en esta página. Pulsa "+ Añadir enlace" para crear uno.
+          </div>
+          <ul id="nav-list" class="nav-list"></ul>
+          <button class="btn" id="nav-add">+ Añadir enlace</button>
+        </div>
+        <div class="modal-foot">
+          <label class="check">
+            <input type="checkbox" id="nav-apply-all" />
+            Aplicar también a todas las demás páginas
+          </label>
+          <button class="btn primary" id="nav-save">Guardar cambios</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Nueva página -->
+    <div id="page-modal" class="modal" hidden>
+      <div class="modal-card">
+        <div class="modal-head">
+          <h2>Nueva página</h2>
+          <button class="btn ghost small" id="page-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <label>Título de la página
+            <input id="page-title" placeholder="Sobre mí" />
+          </label>
+          <label>Nombre del archivo
+            <input id="page-slug" placeholder="sobre-mi.html" />
+          </label>
+          <label class="check">
+            <input type="checkbox" id="page-add-nav" checked />
+            Añadir al menú de esta página
+          </label>
+          <label class="check">
+            <input type="checkbox" id="page-add-nav-all" checked />
+            Añadir al menú de todas las demás páginas
+          </label>
+          <p class="muted">Se creará el archivo y se hará commit a GitHub.</p>
+        </div>
+        <div class="modal-foot">
+          <button class="btn" id="page-cancel">Cancelar</button>
+          <button class="btn primary" id="page-create">Crear página</button>
+        </div>
       </div>
     </div>
 
