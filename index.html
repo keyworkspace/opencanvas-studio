@@ -32,7 +32,8 @@
         <button id="btn-text" class="btn tool" title="Editar texto">✎ Texto</button>
         <button id="btn-nav" class="btn tool" title="Editar menú del sitio">≡ Menú</button>
         <button id="btn-new-page" class="btn tool" title="Nueva página">+ Página</button>
-        <button id="btn-undo" class="btn" title="Deshacer cambios locales">↶</button>
+        <button id="btn-undo" class="btn" title="Deshacer (Ctrl+Z)">↶</button>
+        <button id="btn-redo" class="btn" title="Rehacer (Ctrl+Y)">↷</button>
         <button id="btn-reload" class="btn" title="Recargar archivo">↻</button>
         <button id="btn-save" class="btn primary">Guardar</button>
         <button id="btn-logout" class="btn ghost">Salir</button>
@@ -57,7 +58,7 @@
       </div>
       <div class="props-body">
         <label>Texto
-          <textarea id="prop-text" rows="3"></textarea>
+          <textarea id="prop-text" rows="2"></textarea>
         </label>
         <div class="grid-2">
           <label>X <input id="prop-x" type="number" /></label>
@@ -69,11 +70,61 @@
         </div>
         <label>Color de fondo <input id="prop-bg" type="color" /></label>
         <label>Color de texto <input id="prop-color" type="color" /></label>
+
+        <div class="section">
+          <label class="check">
+            <input type="checkbox" id="prop-grad-use" />
+            Usar degradado
+          </label>
+          <div id="prop-grad-fields" class="grad-fields" hidden>
+            <div class="grid-2">
+              <label>Tipo
+                <select id="prop-grad-type">
+                  <option value="linear">Lineal</option>
+                  <option value="radial">Radial</option>
+                </select>
+              </label>
+              <label>Ángulo <input id="prop-grad-angle" type="number" value="135" min="-360" max="360" /></label>
+            </div>
+            <div class="grid-2">
+              <label>Color 1 <input id="prop-grad-c1" type="color" value="#4c8bf5" /></label>
+              <label>Color 2 <input id="prop-grad-c2" type="color" value="#6ee7a8" /></label>
+            </div>
+            <div class="grad-preview" id="prop-grad-preview"></div>
+            <label class="check">
+              <input type="checkbox" id="prop-grad-text" />
+              Texto con degradado
+            </label>
+          </div>
+        </div>
+
+        <div class="section">
+          <label>Animación de entrada
+            <select id="prop-anim-name">
+              <option value="">— ninguna —</option>
+              <option value="fade-in">Fade In</option>
+              <option value="slide-up">Slide Up</option>
+              <option value="slide-down">Slide Down</option>
+              <option value="slide-left">Slide Left</option>
+              <option value="slide-right">Slide Right</option>
+              <option value="zoom-in">Zoom In</option>
+              <option value="bounce-in">Bounce In</option>
+              <option value="rotate-in">Rotate In</option>
+              <option value="flip-in">Flip In</option>
+              <option value="pulse">Pulse (loop)</option>
+            </select>
+          </label>
+          <div class="grid-2">
+            <label>Duración (ms) <input id="prop-anim-dur" type="number" value="600" min="100" step="100" /></label>
+            <label>Retardo (ms) <input id="prop-anim-delay" type="number" value="0" min="0" step="100" /></label>
+          </div>
+          <button class="btn small" id="prop-anim-play">▶ Reproducir</button>
+        </div>
+
         <button id="prop-delete" class="btn danger">Eliminar elemento</button>
       </div>
     </div>
 
-    <!-- Modal: Editor de menú -->
     <div id="nav-modal" class="modal" hidden>
       <div class="modal-card">
         <div class="modal-head">
@@ -98,7 +149,6 @@
       </div>
     </div>
 
-    <!-- Modal: Nueva página -->
     <div id="page-modal" class="modal" hidden>
       <div class="modal-card">
         <div class="modal-head">
