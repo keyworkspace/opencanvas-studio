@@ -37,17 +37,73 @@ const ANIMATIONS = {
    PRESETS DE GRADIENTES
    ================================================= */
 const GRADIENT_PRESETS = {
-  rainbow:    { type: 'linear', angle: 90, stops: [{c:'#ff0000',p:0},{c:'#ff8800',p:17},{c:'#ffee00',p:33},{c:'#00cc44',p:50},{c:'#0088ff',p:67},{c:'#8800ff',p:83},{c:'#ff00aa',p:100}] },
-  pride:      { type: 'linear', angle: 180, stops: [{c:'#e40303',p:0},{c:'#ff8c00',p:16},{c:'#ffed00',p:33},{c:'#008026',p:50},{c:'#24408e',p:66},{c:'#732982',p:83},{c:'#e40303',p:100}] },
-  trans:      { type: 'linear', angle: 180, stops: [{c:'#5bcefa',p:0},{c:'#5bcefa',p:20},{c:'#f5a9b8',p:20},{c:'#f5a9b8',p:40},{c:'#ffffff',p:40},{c:'#ffffff',p:60},{c:'#f5a9b8',p:60},{c:'#f5a9b8',p:80},{c:'#5bcefa',p:80},{c:'#5bcefa',p:100}] },
-  bi:         { type: 'linear', angle: 180, stops: [{c:'#d60270',p:0},{c:'#d60270',p:40},{c:'#9b4f96',p:40},{c:'#9b4f96',p:60},{c:'#0038a8',p:60},{c:'#0038a8',p:100}] },
-  pan:        { type: 'linear', angle: 180, stops: [{c:'#ff218c',p:0},{c:'#ff218c',p:33},{c:'#ffd800',p:33},{c:'#ffd800',p:66},{c:'#21b1ff',p:66},{c:'#21b1ff',p:100}] },
-  nonbinary:  { type: 'linear', angle: 180, stops: [{c:'#fcf434',p:0},{c:'#fcf434',p:25},{c:'#ffffff',p:25},{c:'#ffffff',p:50},{c:'#9c59d1',p:50},{c:'#9c59d1',p:75},{c:'#2c2c2c',p:75},{c:'#2c2c2c',p:100}] },
-  sunset:     { type: 'linear', angle: 135, stops: [{c:'#ff6b6b',p:0},{c:'#ffa94d',p:33},{c:'#ffd93d',p:66},{c:'#c77dff',p:100}] },
-  ocean:      { type: 'linear', angle: 135, stops: [{c:'#0066ff',p:0},{c:'#00c2ff',p:50},{c:'#00ffd1',p:100}] },
-  fire:       { type: 'linear', angle: 135, stops: [{c:'#ff0000',p:0},{c:'#ff6600',p:50},{c:'#ffcc00',p:100}] },
-  pastel:     { type: 'linear', angle: 135, stops: [{c:'#ffb3ba',p:0},{c:'#ffdfba',p:25},{c:'#ffffba',p:50},{c:'#baffc9',p:75},{c:'#bae1ff',p:100}] }
+  rainbow: { type: 'linear', angle: 90, stops: [{c:'#ff0000',p:0},{c:'#ff8800',p:17},{c:'#ffee00',p:33},{c:'#00cc44',p:50},{c:'#0088ff',p:67},{c:'#8800ff',p:83},{c:'#ff00aa',p:100}] },
+  sunset:  { type: 'linear', angle: 135, stops: [{c:'#ff6b6b',p:0},{c:'#ffa94d',p:33},{c:'#ffd93d',p:66},{c:'#c77dff',p:100}] },
+  ocean:   { type: 'linear', angle: 135, stops: [{c:'#0066ff',p:0},{c:'#00c2ff',p:50},{c:'#00ffd1',p:100}] },
+  fire:    { type: 'linear', angle: 135, stops: [{c:'#ff0000',p:0},{c:'#ff6600',p:50},{c:'#ffcc00',p:100}] },
+  pastel:  { type: 'linear', angle: 135, stops: [{c:'#ffb3ba',p:0},{c:'#ffdfba',p:25},{c:'#ffffba',p:50},{c:'#baffc9',p:75},{c:'#bae1ff',p:100}] },
+  neon:    { type: 'linear', angle: 135, stops: [{c:'#ff00e5',p:0},{c:'#00fff0',p:50},{c:'#aaff00',p:100}] },
+  aurora:  { type: 'linear', angle: 135, stops: [{c:'#00ffa3',p:0},{c:'#22d3ee',p:50},{c:'#7c5cfc',p:100}] },
+  forest:  { type: 'linear', angle: 135, stops: [{c:'#0a3d2a',p:0},{c:'#1f8a4c',p:50},{c:'#8ce99a',p:100}] },
+  galaxy:  { type: 'linear', angle: 135, stops: [{c:'#1a0033',p:0},{c:'#4d0099',p:50},{c:'#c77dff',p:100}] },
+  mono:    { type: 'linear', angle: 135, stops: [{c:'#000000',p:0},{c:'#666666',p:50},{c:'#ffffff',p:100}] }
 };
+
+/* =================================================
+   BIBLIOTECA DE ELEMENTOS
+   ================================================= */
+const ELEMENT_LIBRARY = [
+  {
+    id: 'text',
+    label: 'Texto',
+    icon: '📝',
+    items: [
+      { id: 'h1', label: 'Título H1', desc: 'Encabezado principal', preview: '<div class="ep-h1">Título</div>', html: '<h1>Título principal</h1>' },
+      { id: 'h2', label: 'Título H2', desc: 'Encabezado de sección', preview: '<div class="ep-h2">Título</div>', html: '<h2>Título de sección</h2>' },
+      { id: 'h3', label: 'Título H3', desc: 'Subtítulo', preview: '<div class="ep-h3">Título</div>', html: '<h3>Subtítulo</h3>' },
+      { id: 'p', label: 'Párrafo', desc: 'Texto de cuerpo', preview: '<div class="ep-p">Texto de párrafo</div>', html: '<p>Escribe aquí tu texto. Puedes editarlo directamente en la vista previa.</p>' },
+      { id: 'ul', label: 'Lista', desc: 'Lista con viñetas', preview: '<div class="ep-ul">• Item<br>• Item</div>', html: '<ul>\n  <li>Primer item</li>\n  <li>Segundo item</li>\n  <li>Tercer item</li>\n</ul>' },
+      { id: 'ol', label: 'Lista numerada', desc: 'Lista ordenada', preview: '<div class="ep-ul">1. Item<br>2. Item</div>', html: '<ol>\n  <li>Primer item</li>\n  <li>Segundo item</li>\n  <li>Tercer item</li>\n</ol>' },
+      { id: 'quote', label: 'Cita', desc: 'Blockquote', preview: '<div class="ep-quote">"Cita"</div>', html: '<blockquote style="border-left: 3px solid #7c5cfc; padding-left: 16px; margin: 16px 0; font-style: italic; color: #555;">"Una cita inspiradora aquí."</blockquote>' }
+    ]
+  },
+  {
+    id: 'layout',
+    label: 'Diseño',
+    icon: '▦',
+    items: [
+      { id: 'section', label: 'Sección', desc: 'Bloque con padding', preview: '<div class="ep-section"><div></div></div>', html: '<section style="padding: 60px 20px;"><div style="max-width: 1100px; margin: 0 auto;"><h2>Nueva sección</h2><p>Contenido de la sección.</p></div></section>' },
+      { id: 'box', label: 'Caja', desc: 'Contenedor destacado', preview: '<div class="ep-box"></div>', html: '<div style="padding: 24px; border-radius: 12px; background: #f4f4f7; border: 1px solid #e2e2e7;"><p style="margin: 0;">Contenido de la caja</p></div>' },
+      { id: 'cols-2', label: '2 columnas', desc: 'Grid de 2', preview: '<div class="ep-cols"><div></div><div></div></div>', html: '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">\n  <div><h3>Columna 1</h3><p>Contenido.</p></div>\n  <div><h3>Columna 2</h3><p>Contenido.</p></div>\n</div>' },
+      { id: 'cols-3', label: '3 columnas', desc: 'Grid de 3', preview: '<div class="ep-cols3"><div></div><div></div><div></div></div>', html: '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">\n  <div><h3>Columna 1</h3><p>Contenido.</p></div>\n  <div><h3>Columna 2</h3><p>Contenido.</p></div>\n  <div><h3>Columna 3</h3><p>Contenido.</p></div>\n</div>' },
+      { id: 'spacer', label: 'Espacio', desc: 'Separación vertical', preview: '<div class="ep-spacer"></div>', html: '<div style="height: 60px;"></div>' },
+      { id: 'hr', label: 'Separador', desc: 'Línea horizontal', preview: '<div class="ep-hr"></div>', html: '<hr style="border: 0; border-top: 1px solid #e2e2e7; margin: 32px 0;">' }
+    ]
+  },
+  {
+    id: 'visual',
+    label: 'Visual',
+    icon: '🎨',
+    items: [
+      { id: 'img', label: 'Imagen', desc: 'Imagen responsive', preview: '<div class="ep-img">🖼</div>', html: '<img src="https://placehold.co/800x400/7c5cfc/ffffff?text=Imagen" alt="Imagen" style="width: 100%; height: auto; border-radius: 12px; display: block;">' },
+      { id: 'btn', label: 'Botón', desc: 'Enlace con estilo', preview: '<div class="ep-btn">Botón</div>', html: '<a href="#" style="display: inline-block; padding: 12px 24px; background: #7c5cfc; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Botón</a>' },
+      { id: 'icon', label: 'Ícono', desc: 'Emoji o símbolo', preview: '<div class="ep-icon">★</div>', html: '<div style="font-size: 48px; line-height: 1;">★</div>' },
+      { id: 'badge', label: 'Etiqueta', desc: 'Badge / pill', preview: '<div class="ep-badge">Nuevo</div>', html: '<span style="display: inline-block; padding: 4px 12px; background: #7c5cfc; color: #fff; border-radius: 999px; font-size: 13px; font-weight: 600;">Nuevo</span>' },
+      { id: 'card', label: 'Tarjeta', desc: 'Imagen + texto', preview: '<div class="ep-card"><div></div><div></div></div>', html: '<div style="border: 1px solid #e2e2e7; border-radius: 12px; overflow: hidden; background: #fff; max-width: 320px;">\n  <img src="https://placehold.co/400x200/7c5cfc/ffffff?text=Imagen" alt="" style="width: 100%; display: block;">\n  <div style="padding: 20px;">\n    <h3 style="margin: 0 0 8px;">Título de la tarjeta</h3>\n    <p style="margin: 0; color: #555;">Descripción breve de la tarjeta.</p>\n  </div>\n</div>' }
+    ]
+  },
+  {
+    id: 'blocks',
+    label: 'Bloques',
+    icon: '🧩',
+    items: [
+      { id: 'hero', label: 'Hero', desc: 'Portada principal', preview: '<div class="ep-hero"><div></div></div>', html: '<section style="padding: 100px 20px; text-align: center; background: linear-gradient(135deg, #7c5cfc, #22d3ee); color: #fff;">\n  <h1 style="font-size: 48px; margin: 0 0 16px;">Título principal</h1>\n  <p style="font-size: 20px; margin: 0 0 32px;">Subtítulo descriptivo que explica de qué va esto.</p>\n  <a href="#" style="display: inline-block; padding: 14px 32px; background: #fff; color: #7c5cfc; text-decoration: none; border-radius: 8px; font-weight: 700;">Empezar</a>\n</section>' },
+      { id: 'cta', label: 'Llamada a la acción', desc: 'Bloque CTA', preview: '<div class="ep-cta"><div></div></div>', html: '<section style="padding: 60px 20px; background: #f4f4f7; border-radius: 16px; text-align: center;">\n  <h2 style="margin: 0 0 12px;">¿Listo para empezar?</h2>\n  <p style="margin: 0 0 24px; color: #555;">Únete a las personas que ya lo están usando.</p>\n  <a href="#" style="display: inline-block; padding: 12px 28px; background: #7c5cfc; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Comenzar ahora</a>\n</section>' },
+      { id: 'features', label: 'Grid de features', desc: '3 features con icono', preview: '<div class="ep-grid"><div></div><div></div><div></div></div>', html: '<section style="padding: 60px 20px;">\n  <h2 style="text-align: center; margin: 0 0 40px;">Características</h2>\n  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1100px; margin: 0 auto;">\n    <div><div style="font-size: 32px;">⚡</div><h3>Rápido</h3><p>Carga al instante.</p></div>\n    <div><div style="font-size: 32px;">🎨</div><h3>Bonito</h3><p>Diseño limpio.</p></div>\n    <div><div style="font-size: 32px;">🔒</div><h3>Seguro</h3><p>Sin riesgos.</p></div>\n  </div>\n</section>' },
+      { id: 'split', label: 'Split image + texto', desc: 'Dos columnas', preview: '<div class="ep-cols"><div></div><div></div></div>', html: '<section style="padding: 60px 20px;">\n  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; max-width: 1100px; margin: 0 auto;">\n    <div>\n      <img src="https://placehold.co/600x400/7c5cfc/ffffff?text=Imagen" alt="" style="width: 100%; border-radius: 12px; display: block;">\n    </div>\n    <div>\n      <h2>Título de la sección</h2>\n      <p>Descripción del contenido que aparece junto a la imagen. Editable.</p>\n      <a href="#" style="display: inline-block; margin-top: 12px; padding: 10px 22px; background: #7c5cfc; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Saber más</a>\n    </div>\n  </div>\n</section>' }
+    ]
+  }
+];
 
 /* =================================================
    SESIÓN
@@ -544,7 +600,7 @@ function clearSelection() {
 }
 
 /* =================================================
-   GRADIENTES MULTI-COLOR
+   GRADIENTES
    ================================================= */
 function gradientCss(g) {
   if (!g.stops.length) return '';
@@ -566,13 +622,10 @@ function parseGradient(el, cs) {
   const angleMatch = bg.match(/(?:from\s+)?(-?\d+(?:\.\d+)?)deg/);
   const angle = angleMatch ? Math.round(parseFloat(angleMatch[1])) : 135;
 
-  // Extraer todos los color stops
   const stops = [];
-  // Buscar el interior de la función de gradiente
   const innerMatch = bg.match(/gradient\([^,]+,\s*(.+)\)/i);
   if (innerMatch) {
     const stopsStr = innerMatch[1];
-    // Separar por comas que no estén dentro de paréntesis (para rgb())
     const parts = [];
     let depth = 0, cur = '';
     for (const ch of stopsStr) {
@@ -653,13 +706,11 @@ function renderGradientStops() {
     wrap.appendChild(row);
   });
 }
-
 function updateGradPreview() {
   const pv = $('#prop-grad-preview');
   if (!state.gradient.use) { pv.style.background = 'transparent'; return; }
   pv.style.background = gradientCss(state.gradient);
 }
-
 function applyGradFromUI() {
   const el = state.selectedEl; if (!el) return;
   applyGradient(el, state.gradient);
@@ -794,7 +845,6 @@ function bindPropsEvents() {
     }
   };
 
-  /* Tabs */
   $$('.tab').forEach((tab) => {
     tab.onclick = () => {
       $$('.tab').forEach((t) => t.classList.remove('active'));
@@ -803,7 +853,6 @@ function bindPropsEvents() {
     };
   });
 
-  /* Gradient */
   $('#prop-grad-use').onchange = (e) => {
     state.gradient.use = e.target.checked;
     $('#prop-grad-fields').hidden = !e.target.checked;
@@ -848,7 +897,6 @@ function bindPropsEvents() {
     };
   });
 
-  /* Animación */
   const applyAnimFromUI = () => {
     const el = sel(); if (!el) return;
     applyAnimation(el,
@@ -912,84 +960,166 @@ function setMode(mode) {
 }
 
 /* =================================================
-   DETECCIÓN DE MENÚS (header + footer, con submenús)
+   BIBLIOTECA DE ELEMENTOS — UI
+   ================================================= */
+let currentCategory = 'text';
+
+function openElementsModal() {
+  if (!state.filePath) { toast('Abre una página primero', 'error'); return; }
+  renderElementsCategories();
+  renderElementsGrid();
+  updateElementsHint();
+  $('#elements-modal').hidden = false;
+}
+
+function updateElementsHint() {
+  const hint = $('#elements-hint');
+  if (state.selectedEl) {
+    hint.textContent = `Se insertará después de <${state.selectedEl.tagName.toLowerCase()}>.`;
+  } else {
+    hint.textContent = 'Se insertará al final de la página.';
+  }
+}
+
+function renderElementsCategories() {
+  const wrap = $('#elements-cats');
+  wrap.innerHTML = '';
+  ELEMENT_LIBRARY.forEach((cat) => {
+    const btn = document.createElement('button');
+    btn.className = 'elements-cat' + (cat.id === currentCategory ? ' active' : '');
+    btn.innerHTML = `<span class="cat-icon">${cat.icon}</span><span>${cat.label}</span>`;
+    btn.onclick = () => {
+      currentCategory = cat.id;
+      renderElementsCategories();
+      renderElementsGrid();
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+function renderElementsGrid() {
+  const grid = $('#elements-grid');
+  grid.innerHTML = '';
+  const cat = ELEMENT_LIBRARY.find((c) => c.id === currentCategory);
+  if (!cat) return;
+  cat.items.forEach((item) => {
+    const btn = document.createElement('button');
+    btn.className = 'element-btn';
+    btn.innerHTML = `
+      <div class="element-preview">${item.preview}</div>
+      <div>
+        <div class="element-label">${escapeHtml(item.label)}</div>
+        <div class="element-desc">${escapeHtml(item.desc)}</div>
+      </div>
+    `;
+    btn.onclick = () => insertElement(item.html);
+    grid.appendChild(btn);
+  });
+}
+
+/* =================================================
+   INSERCIÓN DE ELEMENTOS
+   ================================================= */
+function insertElement(html) {
+  const doc = $('#preview').contentDocument;
+  if (!doc || !doc.body) { toast('No hay página abierta', 'error'); return; }
+
+  // Parsear HTML
+  const temp = doc.createElement('div');
+  temp.innerHTML = html.trim();
+  const newEl = temp.firstElementChild;
+  if (!newEl) { toast('Elemento inválido', 'error'); return; }
+
+  // Determinar punto de inserción
+  let container, reference;
+  if (state.selectedEl && doc.body.contains(state.selectedEl) && state.selectedEl !== doc.body) {
+    container = state.selectedEl.parentElement;
+    reference = state.selectedEl.nextSibling;
+  } else {
+    const main = doc.querySelector('main');
+    container = main || doc.body;
+    reference = null;
+  }
+
+  container.insertBefore(newEl, reference);
+
+  // Actualizar estilos de animación (por si el nuevo elemento las tiene)
+  ensureRuntimeStyles(doc);
+
+  // Seleccionar el nuevo elemento
+  if (state._select) state._select(newEl);
+
+  // Guardar snapshot
+  snapshotNow();
+
+  // Cerrar modal y volver a modo selección
+  $('#elements-modal').hidden = true;
+  if (state.mode !== 'select') setMode('select');
+
+  // Scroll hacia el elemento insertado
+  setTimeout(() => {
+    try { newEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
+  }, 100);
+
+  toast('Elemento añadido ✓', 'ok');
+}
+
+/* =================================================
+   DETECCIÓN DE MENÚS
    ================================================= */
 function detectMenus(doc) {
   const menus = [];
-
-  // Header
   const header = doc.querySelector('header') || doc.querySelector('[role="banner"]');
   if (header) {
     const navs = header.querySelectorAll('nav, [role="navigation"], ul');
     const nav = pickBestNav(navs, header);
     if (nav) menus.push({ id: 'header', label: 'Menú del header', el: nav });
   }
-
-  // Footer
   const footer = doc.querySelector('footer') || doc.querySelector('[role="contentinfo"]');
   if (footer) {
     const navs = footer.querySelectorAll('nav, [role="navigation"], ul');
     const nav = pickBestNav(navs, footer);
     if (nav) menus.push({ id: 'footer', label: 'Menú del footer', el: nav });
   }
-
-  // Si no hay header/footer pero hay un nav suelto, usarlo como "menú principal"
   if (!menus.length) {
     const nav = doc.querySelector('nav, [role="navigation"]');
     if (nav) menus.push({ id: 'main', label: 'Menú principal', el: nav });
   }
-
   return menus;
 }
-
 function pickBestNav(navs, parent) {
   if (!navs.length) return null;
-  // Priorizar <nav> sobre <ul>
   let best = null, bestScore = -1;
   navs.forEach((el) => {
     if (!el.querySelector('a')) return;
     let score = 0;
     if (el.tagName === 'NAV') score += 10;
     if (el.getAttribute('role') === 'navigation') score += 8;
-    // Más enlaces = mejor
     score += Math.min(el.querySelectorAll('a').length, 10);
-    // Preferir el de menor profundidad
     const depth = (() => { let d = 0, p = el; while (p && p !== parent) { d++; p = p.parentElement; } return d; })();
     score -= depth * 0.5;
     if (score > bestScore) { bestScore = score; best = el; }
   });
   return best;
 }
-
 function readMenuTree(navEl) {
-  // Devuelve array de items: { text, href, children: [...] }
-  const rootList = navEl.tagName === 'UL' || navEl.tagName === 'OL'
-    ? navEl
-    : navEl.querySelector('ul, ol') || navEl;
-
+  const rootList = navEl.tagName === 'UL' || navEl.tagName === 'OL' ? navEl : navEl.querySelector('ul, ol') || navEl;
   const items = [];
   const topLis = rootList.children;
-  if (rootList.tagName === 'A') {
-    // nav > a (sin ul)
-    return [{ text: rootList.textContent.trim(), href: rootList.getAttribute('href') || '#', children: [] }];
-  }
+  if (rootList.tagName === 'A') return [{ text: rootList.textContent.trim(), href: rootList.getAttribute('href') || '#', children: [] }];
   for (const li of topLis) {
     if (li.tagName !== 'LI') {
-      if (li.tagName === 'A') {
-        items.push({ text: li.textContent.trim(), href: li.getAttribute('href') || '#', children: [] });
-      }
+      if (li.tagName === 'A') items.push({ text: li.textContent.trim(), href: li.getAttribute('href') || '#', children: [] });
       continue;
     }
     const a = li.querySelector(':scope > a');
     const subUl = li.querySelector(':scope > ul, :scope > ol');
-    const item = {
+    items.push({
       text: a ? a.textContent.trim() : (li.firstChild?.textContent?.trim() || 'Item'),
       href: a ? (a.getAttribute('href') || '#') : '#',
       children: subUl ? readMenuChildren(subUl) : []
-    };
-    items.push(item);
+    });
   }
-  // Caso: <ul><a>...</a><a>...</a></ul> sin li
   if (!items.length) {
     [...rootList.querySelectorAll(':scope > a')].forEach((a) => {
       items.push({ text: a.textContent.trim(), href: a.getAttribute('href') || '#', children: [] });
@@ -997,7 +1127,6 @@ function readMenuTree(navEl) {
   }
   return items;
 }
-
 function readMenuChildren(ul) {
   const items = [];
   for (const li of ul.children) {
@@ -1012,17 +1141,11 @@ function readMenuChildren(ul) {
   }
   return items;
 }
-
 function writeMenuTree(navEl, items, doc) {
-  const rootList = navEl.tagName === 'UL' || navEl.tagName === 'OL'
-    ? navEl
-    : navEl.querySelector('ul, ol') || navEl;
-
+  const rootList = navEl.tagName === 'UL' || navEl.tagName === 'OL' ? navEl : navEl.querySelector('ul, ol') || navEl;
   const isUl = rootList.tagName === 'UL' || rootList.tagName === 'OL';
   rootList.innerHTML = '';
-
   if (!isUl) {
-    // nav > a directo
     items.forEach((item) => {
       const a = doc.createElement('a');
       a.textContent = item.text; a.setAttribute('href', item.href);
@@ -1030,58 +1153,39 @@ function writeMenuTree(navEl, items, doc) {
     });
     return;
   }
-
-  items.forEach((item) => {
-    const li = doc.createElement('li');
-    const a = doc.createElement('a');
-    a.textContent = item.text; a.setAttribute('href', item.href);
-    li.appendChild(a);
-    if (item.children && item.children.length) {
-      const subUl = doc.createElement('ul');
-      item.children.forEach((child) => {
-        const childLi = doc.createElement('li');
-        const childA = doc.createElement('a');
-        childA.textContent = child.text; childA.setAttribute('href', child.href);
-        childLi.appendChild(childA);
-        if (child.children && child.children.length) {
-          const subSubUl = doc.createElement('ul');
-          child.children.forEach((g) => {
-            const gLi = doc.createElement('li');
-            const gA = doc.createElement('a');
-            gA.textContent = g.text; gA.setAttribute('href', g.href);
-            gLi.appendChild(gA); subSubUl.appendChild(gLi);
-          });
-          childLi.appendChild(subSubUl);
-        }
-        subUl.appendChild(childLi);
-      });
-      li.appendChild(subUl);
-    }
-    rootList.appendChild(li);
-  });
+  const writeItems = (parentUl, arr) => {
+    arr.forEach((item) => {
+      const li = doc.createElement('li');
+      const a = doc.createElement('a');
+      a.textContent = item.text; a.setAttribute('href', item.href);
+      li.appendChild(a);
+      if (item.children && item.children.length) {
+        const subUl = doc.createElement('ul');
+        writeItems(subUl, item.children);
+        li.appendChild(subUl);
+      }
+      parentUl.appendChild(li);
+    });
+  };
+  writeItems(rootList, items);
 }
 
 /* =================================================
-   MENÚ EDITOR (modal)
+   MENÚ EDITOR
    ================================================= */
-let navState = []; // [{ id, label, items: [...] }]
+let navState = [];
 
 function openNavEditor() {
   const doc = $('#preview').contentDocument;
   const menus = detectMenus(doc);
-  navState = menus.map((m) => ({
-    id: m.id,
-    label: m.label,
-    items: readMenuTree(m.el)
-  }));
+  navState = menus.map((m) => ({ id: m.id, label: m.label, items: readMenuTree(m.el) }));
   renderNavEditor();
   $('#nav-modal').hidden = false;
 }
-
 function renderNavEditor() {
   const wrap = $('#nav-menus'); wrap.innerHTML = '';
   if (!navState.length) {
-    wrap.innerHTML = '<div class="nav-group-empty">No se detectó ningún menú en esta página. Añade un &lt;nav&gt; o &lt;header&gt; y vuelve a intentarlo.</div>';
+    wrap.innerHTML = '<div class="nav-group-empty">No se detectó ningún menú en esta página.</div>';
     return;
   }
   navState.forEach((menu, mi) => {
@@ -1092,10 +1196,10 @@ function renderNavEditor() {
         <span class="nav-group-title">${escapeHtml(menu.label)}</span>
         <button class="btn btn-sm" data-add="${mi}">+ Añadir item</button>
       </div>
-      ${menu.items.length ? '<ul class="nav-tree" data-menu="' + mi + '"></ul>' : '<div class="nav-group-empty">Sin enlaces todavía</div>'}
+      ${menu.items.length ? '<ul class="nav-tree"></ul>' : '<div class="nav-group-empty">Sin enlaces todavía</div>'}
     `;
     const ul = group.querySelector('.nav-tree');
-    if (ul) renderNavItems(ul, menu.items, mi, []);
+    if (ul) renderNavItems(ul, menu.items, mi);
     wrap.appendChild(group);
   });
   wrap.querySelectorAll('[data-add]').forEach((btn) => {
@@ -1106,13 +1210,11 @@ function renderNavEditor() {
     };
   });
 }
-
-function renderNavItems(ul, items, menuIdx, path) {
+function renderNavItems(ul, items) {
   items.forEach((item, i) => {
     const li = document.createElement('li');
     const wrapper = document.createElement('div');
     wrapper.className = 'nav-item';
-
     const row = document.createElement('div');
     row.className = 'nav-item-row';
 
@@ -1125,15 +1227,15 @@ function renderNavItems(ul, items, menuIdx, path) {
     hrefInp.oninput = () => { item.href = hrefInp.value; };
 
     const btnUp = document.createElement('button');
-    btnUp.className = 'nav-mini-btn'; btnUp.textContent = '↑'; btnUp.title = 'Subir';
+    btnUp.className = 'nav-mini-btn'; btnUp.textContent = '↑';
     btnUp.onclick = () => { if (i > 0) { [items[i-1], items[i]] = [items[i], items[i-1]]; renderNavEditor(); } };
 
     const btnDown = document.createElement('button');
-    btnDown.className = 'nav-mini-btn'; btnDown.textContent = '↓'; btnDown.title = 'Bajar';
+    btnDown.className = 'nav-mini-btn'; btnDown.textContent = '↓';
     btnDown.onclick = () => { if (i < items.length - 1) { [items[i+1], items[i]] = [items[i], items[i+1]]; renderNavEditor(); } };
 
     const btnChild = document.createElement('button');
-    btnChild.className = 'nav-mini-btn'; btnChild.textContent = '↳'; btnChild.title = 'Añadir subitem';
+    btnChild.className = 'nav-mini-btn'; btnChild.textContent = '↳';
     btnChild.onclick = () => {
       item.children = item.children || [];
       item.children.push({ text: 'Subitem', href: '#', children: [] });
@@ -1141,41 +1243,34 @@ function renderNavItems(ul, items, menuIdx, path) {
     };
 
     const btnDel = document.createElement('button');
-    btnDel.className = 'nav-mini-btn del'; btnDel.textContent = '✕'; btnDel.title = 'Eliminar';
+    btnDel.className = 'nav-mini-btn del'; btnDel.textContent = '✕';
     btnDel.onclick = () => { items.splice(i, 1); renderNavEditor(); };
 
     row.append(textInp, hrefInp, btnUp, btnDown, btnChild, btnDel);
     wrapper.appendChild(row);
-
     if (item.children && item.children.length) {
       const subUl = document.createElement('ul');
       subUl.className = 'nav-tree';
-      renderNavItems(subUl, item.children, menuIdx, [...path, i]);
+      renderNavItems(subUl, item.children);
       wrapper.appendChild(subUl);
     }
-
     li.appendChild(wrapper);
     ul.appendChild(li);
   });
 }
-
 function applyNavStateToIframe() {
   const doc = $('#preview').contentDocument;
   if (!doc) return;
   const currentMenus = detectMenus(doc);
-  // Mapear por id
   navState.forEach((menu) => {
     const found = currentMenus.find((m) => m.id === menu.id);
     if (found) writeMenuTree(found.el, menu.items, doc);
   });
 }
-
 async function saveNavChanges() {
   const applyAll = $('#nav-apply-all').checked;
   $('#nav-save').disabled = true;
-
   try {
-    // Aplicar en el iframe y guardar esta página
     applyNavStateToIframe();
     await saveCurrent(true);
     toast('Menús guardados en esta página ✓', 'ok');
@@ -1184,7 +1279,6 @@ async function saveNavChanges() {
     $('#nav-save').disabled = false;
     return;
   }
-
   if (applyAll) {
     const others = state.files.filter((f) => f.path !== state.filePath);
     let count = 0;
@@ -1201,12 +1295,10 @@ async function saveNavChanges() {
     }
     toast(`Menús aplicados a ${count + 1} páginas ✓`, 'ok');
   }
-
   $('#nav-modal').hidden = true;
   $('#nav-save').disabled = false;
   await refreshFileList();
 }
-
 function replaceMenusInHtml(html, menus) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
@@ -1248,9 +1340,7 @@ async function createPage() {
     const currentHtml = state.filePath
       ? (await getFile({ ...state, path: state.filePath })).content
       : defaultTemplate(title);
-
     const newHtml = buildNewPage(title, currentHtml, addToCurrent ? { text: title, href: slug } : null);
-
     await putFile({ ...state, path: slug, content: newHtml,
       message: `Create ${slug} via OpenCanvas Studio` });
 
@@ -1278,16 +1368,11 @@ async function createPage() {
     toast('Error al crear: ' + err.message, 'error');
   } finally { $('#page-create').disabled = false; }
 }
-
 function buildNewPage(title, currentHtml, navLink) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(currentHtml, 'text/html');
-
   const headParts = [];
-  doc.head.querySelectorAll('link[rel="stylesheet"], style:not([data-oc-injected])').forEach((el) => {
-    headParts.push(el.outerHTML);
-  });
-
+  doc.head.querySelectorAll('link[rel="stylesheet"], style:not([data-oc-injected])').forEach((el) => headParts.push(el.outerHTML));
   const header = doc.querySelector('header');
   const footer = doc.querySelector('footer');
   const lang = doc.documentElement.lang || 'es';
@@ -1312,7 +1397,6 @@ function buildNewPage(title, currentHtml, navLink) {
     headerHtml = clone.outerHTML;
   }
   const footerHtml = footer ? footer.outerHTML : '';
-
   return `<!DOCTYPE html>
 <html lang="${lang}">
 <head>
@@ -1331,18 +1415,13 @@ ${footerHtml}
 </body>
 </html>`;
 }
-
 function addLinkToMenus(html, link) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   const menus = detectMenus(doc);
   const header = menus.find((m) => m.id === 'header');
   if (!header) return html;
-
-  const rootList = header.el.tagName === 'UL' || header.el.tagName === 'OL'
-    ? header.el
-    : header.el.querySelector('ul, ol') || header.el;
-
+  const rootList = header.el.tagName === 'UL' || header.el.tagName === 'OL' ? header.el : header.el.querySelector('ul, ol') || header.el;
   if (rootList.tagName === 'UL' || rootList.tagName === 'OL') {
     const exists = [...rootList.querySelectorAll('a')].some((a) => (a.getAttribute('href') || '') === link.href);
     if (exists) return html;
@@ -1354,7 +1433,6 @@ function addLinkToMenus(html, link) {
   }
   return '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
 }
-
 function defaultTemplate(title) {
   return `<!DOCTYPE html>
 <html lang="es">
@@ -1363,7 +1441,7 @@ function defaultTemplate(title) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${escapeHtml(title)}</title>
 <style>
-body{font-family:system-ui,sans-serif;max-width:760px;margin:0 auto;padding:40px 20px;line-height:1.6;color:#222}
+body{font-family:system-ui,sans-serif;max-width:960px;margin:0 auto;padding:40px 20px;line-height:1.6;color:#222}
 header{display:flex;justify-content:space-between;align-items:center;margin-bottom:40px}
 nav ul{list-style:none;padding:0;display:flex;gap:16px;margin:0}
 nav a{text-decoration:none;color:#7c5cfc;font-weight:500}
@@ -1439,7 +1517,6 @@ function serializeCurrentIframe() {
     .replace(/\s*style="will-change:\s*transform[^"]*"/g, '');
   return out;
 }
-
 async function saveCurrent(silent = false) {
   if (!state.filePath) return;
   if (!state.fileSha) throw new Error('No hay SHA. Recarga la página primero.');
@@ -1470,6 +1547,7 @@ $('#btn-save').onclick = save;
 $('#btn-reload').onclick = () => state.filePath && openFile(state.filePath);
 $('#btn-select').onclick = () => setMode('select');
 $('#btn-text').onclick = () => setMode('text');
+$('#btn-add-element').onclick = openElementsModal;
 $('#btn-nav').onclick = openNavEditor;
 $('#btn-new-page').onclick = openPageModal;
 $('#sidebar-new').onclick = openPageModal;
@@ -1496,6 +1574,8 @@ $('#btn-more').onclick = (e) => {
 };
 document.addEventListener('click', () => { $('#more-menu').hidden = true; });
 
+$('#elements-close').onclick = () => { $('#elements-modal').hidden = true; };
+
 $('#nav-close').onclick = () => { $('#nav-modal').hidden = true; };
 $('#nav-cancel').onclick = () => { $('#nav-modal').hidden = true; };
 $('#nav-save').onclick = saveNavChanges;
@@ -1511,6 +1591,7 @@ $('#page-slug').oninput = () => { $('#page-slug').dataset.touched = '1'; };
 
 /* Atajos globales */
 window.addEventListener('keydown', (e) => {
+  if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
     e.preventDefault(); undo();
   } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y' || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) {
@@ -1518,11 +1599,11 @@ window.addEventListener('keydown', (e) => {
   } else if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
     e.preventDefault(); save();
   } else if (e.key === 'v' || e.key === 'V') {
-    if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
     setMode('select');
   } else if (e.key === 't' || e.key === 'T') {
-    if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
     setMode('text');
+  } else if (e.key === 'a' || e.key === 'A') {
+    if (!$('#editor').hidden) { e.preventDefault(); openElementsModal(); }
   }
 });
 
