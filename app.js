@@ -12,7 +12,8 @@ const state = {
   files: [], loading: false,
   suppressHistory: false,
   device: 'desktop',
-  gradient: { use: false, text: false, type: 'linear', angle: 135, stops: [] }
+  gradient: { use: false, text: false, type: 'linear', angle: 135, stops: [] },
+  activePanel: 'props'
 };
 
 const STORAGE_KEY = 'opencanvas.session';
@@ -33,9 +34,6 @@ const ANIMATIONS = {
   'pulse':      { name: 'oc-pulse',     kf: '@keyframes oc-pulse{0%,100%{opacity:1}50%{opacity:.5}}', loop: true }
 };
 
-/* =================================================
-   PRESETS DE GRADIENTES
-   ================================================= */
 const GRADIENT_PRESETS = {
   rainbow: { type: 'linear', angle: 90, stops: [{c:'#ff0000',p:0},{c:'#ff8800',p:17},{c:'#ffee00',p:33},{c:'#00cc44',p:50},{c:'#0088ff',p:67},{c:'#8800ff',p:83},{c:'#ff00aa',p:100}] },
   sunset:  { type: 'linear', angle: 135, stops: [{c:'#ff6b6b',p:0},{c:'#ffa94d',p:33},{c:'#ffd93d',p:66},{c:'#c77dff',p:100}] },
@@ -56,54 +54,52 @@ const ELEMENT_LIBRARY = [
   {
     id: 'text',
     label: 'Texto',
-    icon: '📝',
     items: [
-      { id: 'h1', label: 'Título H1', desc: 'Encabezado principal', preview: '<div class="ep-h1">Título</div>', html: '<h1>Título principal</h1>' },
-      { id: 'h2', label: 'Título H2', desc: 'Encabezado de sección', preview: '<div class="ep-h2">Título</div>', html: '<h2>Título de sección</h2>' },
-      { id: 'h3', label: 'Título H3', desc: 'Subtítulo', preview: '<div class="ep-h3">Título</div>', html: '<h3>Subtítulo</h3>' },
-      { id: 'p', label: 'Párrafo', desc: 'Texto de cuerpo', preview: '<div class="ep-p">Texto de párrafo</div>', html: '<p>Escribe aquí tu texto. Puedes editarlo directamente en la vista previa.</p>' },
-      { id: 'ul', label: 'Lista', desc: 'Lista con viñetas', preview: '<div class="ep-ul">• Item<br>• Item</div>', html: '<ul>\n  <li>Primer item</li>\n  <li>Segundo item</li>\n  <li>Tercer item</li>\n</ul>' },
-      { id: 'ol', label: 'Lista numerada', desc: 'Lista ordenada', preview: '<div class="ep-ul">1. Item<br>2. Item</div>', html: '<ol>\n  <li>Primer item</li>\n  <li>Segundo item</li>\n  <li>Tercer item</li>\n</ol>' },
-      { id: 'quote', label: 'Cita', desc: 'Blockquote', preview: '<div class="ep-quote">"Cita"</div>', html: '<blockquote style="border-left: 3px solid #7c5cfc; padding-left: 16px; margin: 16px 0; font-style: italic; color: #555;">"Una cita inspiradora aquí."</blockquote>' }
+      { id: 'h1', thumb: 'H₁', label: 'Título principal', html: '<h1>Título principal</h1>' },
+      { id: 'h2', thumb: 'H₂', label: 'Título de sección', html: '<h2>Título de sección</h2>' },
+      { id: 'h3', thumb: 'H₃', label: 'Subtítulo', html: '<h3>Subtítulo</h3>' },
+      { id: 'p', thumb: '¶', label: 'Párrafo', html: '<p>Escribe aquí tu texto. Puedes editarlo directamente en la vista previa.</p>' },
+      { id: 'ul', thumb: '☰', label: 'Lista con viñetas', html: '<ul>\n  <li>Primer item</li>\n  <li>Segundo item</li>\n  <li>Tercer item</li>\n</ul>' },
+      { id: 'ol', thumb: '№', label: 'Lista numerada', html: '<ol>\n  <li>Primer item</li>\n  <li>Segundo item</li>\n  <li>Tercer item</li>\n</ol>' },
+      { id: 'quote', thumb: '"', label: 'Cita', html: '<blockquote style="border-left: 3px solid #7c5cfc; padding-left: 16px; margin: 16px 0; font-style: italic; color: #555;">"Una cita inspiradora aquí."</blockquote>' }
     ]
   },
   {
     id: 'layout',
     label: 'Diseño',
-    icon: '▦',
     items: [
-      { id: 'section', label: 'Sección', desc: 'Bloque con padding', preview: '<div class="ep-section"><div></div></div>', html: '<section style="padding: 60px 20px;"><div style="max-width: 1100px; margin: 0 auto;"><h2>Nueva sección</h2><p>Contenido de la sección.</p></div></section>' },
-      { id: 'box', label: 'Caja', desc: 'Contenedor destacado', preview: '<div class="ep-box"></div>', html: '<div style="padding: 24px; border-radius: 12px; background: #f4f4f7; border: 1px solid #e2e2e7;"><p style="margin: 0;">Contenido de la caja</p></div>' },
-      { id: 'cols-2', label: '2 columnas', desc: 'Grid de 2', preview: '<div class="ep-cols"><div></div><div></div></div>', html: '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">\n  <div><h3>Columna 1</h3><p>Contenido.</p></div>\n  <div><h3>Columna 2</h3><p>Contenido.</p></div>\n</div>' },
-      { id: 'cols-3', label: '3 columnas', desc: 'Grid de 3', preview: '<div class="ep-cols3"><div></div><div></div><div></div></div>', html: '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">\n  <div><h3>Columna 1</h3><p>Contenido.</p></div>\n  <div><h3>Columna 2</h3><p>Contenido.</p></div>\n  <div><h3>Columna 3</h3><p>Contenido.</p></div>\n</div>' },
-      { id: 'spacer', label: 'Espacio', desc: 'Separación vertical', preview: '<div class="ep-spacer"></div>', html: '<div style="height: 60px;"></div>' },
-      { id: 'hr', label: 'Separador', desc: 'Línea horizontal', preview: '<div class="ep-hr"></div>', html: '<hr style="border: 0; border-top: 1px solid #e2e2e7; margin: 32px 0;">' }
+      { id: 'section', thumb: '▭', label: 'Sección', html: '<section style="padding: 60px 20px;"><div style="max-width: 1100px; margin: 0 auto;"><h2>Nueva sección</h2><p>Contenido de la sección.</p></div></section>' },
+      { id: 'box', thumb: '◻', label: 'Caja', html: '<div style="padding: 24px; border-radius: 12px; background: #f4f4f7; border: 1px solid #e2e2e7;"><p style="margin: 0;">Contenido de la caja</p></div>' },
+      { id: 'cols-2', thumb: '▥', label: '2 columnas', html: '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">\n  <div><h3>Columna 1</h3><p>Contenido.</p></div>\n  <div><h3>Columna 2</h3><p>Contenido.</p></div>\n</div>' },
+      { id: 'cols-3', thumb: '▦', label: '3 columnas', html: '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">\n  <div><h3>Columna 1</h3><p>Contenido.</p></div>\n  <div><h3>Columna 2</h3><p>Contenido.</p></div>\n  <div><h3>Columna 3</h3><p>Contenido.</p></div>\n</div>' },
+      { id: 'spacer', thumb: '↕', label: 'Espacio', html: '<div style="height: 60px;"></div>' },
+      { id: 'hr', thumb: '—', label: 'Separador', html: '<hr style="border: 0; border-top: 1px solid #e2e2e7; margin: 32px 0;">' }
     ]
   },
   {
     id: 'visual',
     label: 'Visual',
-    icon: '🎨',
     items: [
-      { id: 'img', label: 'Imagen', desc: 'Imagen responsive', preview: '<div class="ep-img">🖼</div>', html: '<img src="https://placehold.co/800x400/7c5cfc/ffffff?text=Imagen" alt="Imagen" style="width: 100%; height: auto; border-radius: 12px; display: block;">' },
-      { id: 'btn', label: 'Botón', desc: 'Enlace con estilo', preview: '<div class="ep-btn">Botón</div>', html: '<a href="#" style="display: inline-block; padding: 12px 24px; background: #7c5cfc; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Botón</a>' },
-      { id: 'icon', label: 'Ícono', desc: 'Emoji o símbolo', preview: '<div class="ep-icon">★</div>', html: '<div style="font-size: 48px; line-height: 1;">★</div>' },
-      { id: 'badge', label: 'Etiqueta', desc: 'Badge / pill', preview: '<div class="ep-badge">Nuevo</div>', html: '<span style="display: inline-block; padding: 4px 12px; background: #7c5cfc; color: #fff; border-radius: 999px; font-size: 13px; font-weight: 600;">Nuevo</span>' },
-      { id: 'card', label: 'Tarjeta', desc: 'Imagen + texto', preview: '<div class="ep-card"><div></div><div></div></div>', html: '<div style="border: 1px solid #e2e2e7; border-radius: 12px; overflow: hidden; background: #fff; max-width: 320px;">\n  <img src="https://placehold.co/400x200/7c5cfc/ffffff?text=Imagen" alt="" style="width: 100%; display: block;">\n  <div style="padding: 20px;">\n    <h3 style="margin: 0 0 8px;">Título de la tarjeta</h3>\n    <p style="margin: 0; color: #555;">Descripción breve de la tarjeta.</p>\n  </div>\n</div>' }
+      { id: 'img', thumb: '🖼', label: 'Imagen', html: '<img src="https://placehold.co/800x400/7c5cfc/ffffff?text=Imagen" alt="Imagen" style="width: 100%; height: auto; border-radius: 12px; display: block;">' },
+      { id: 'btn', thumb: '⬭', label: 'Botón', html: '<a href="#" style="display: inline-block; padding: 12px 24px; background: #7c5cfc; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Botón</a>' },
+      { id: 'icon', thumb: '★', label: 'Ícono', html: '<div style="font-size: 48px; line-height: 1;">★</div>' },
+      { id: 'badge', thumb: '⬮', label: 'Etiqueta', html: '<span style="display: inline-block; padding: 4px 12px; background: #7c5cfc; color: #fff; border-radius: 999px; font-size: 13px; font-weight: 600;">Nuevo</span>' },
+      { id: 'card', thumb: '▤', label: 'Tarjeta', html: '<div style="border: 1px solid #e2e2e7; border-radius: 12px; overflow: hidden; background: #fff; max-width: 320px;">\n  <img src="https://placehold.co/400x200/7c5cfc/ffffff?text=Imagen" alt="" style="width: 100%; display: block;">\n  <div style="padding: 20px;">\n    <h3 style="margin: 0 0 8px;">Título de la tarjeta</h3>\n    <p style="margin: 0; color: #555;">Descripción breve de la tarjeta.</p>\n  </div>\n</div>' }
     ]
   },
   {
     id: 'blocks',
     label: 'Bloques',
-    icon: '🧩',
     items: [
-      { id: 'hero', label: 'Hero', desc: 'Portada principal', preview: '<div class="ep-hero"><div></div></div>', html: '<section style="padding: 100px 20px; text-align: center; background: linear-gradient(135deg, #7c5cfc, #22d3ee); color: #fff;">\n  <h1 style="font-size: 48px; margin: 0 0 16px;">Título principal</h1>\n  <p style="font-size: 20px; margin: 0 0 32px;">Subtítulo descriptivo que explica de qué va esto.</p>\n  <a href="#" style="display: inline-block; padding: 14px 32px; background: #fff; color: #7c5cfc; text-decoration: none; border-radius: 8px; font-weight: 700;">Empezar</a>\n</section>' },
-      { id: 'cta', label: 'Llamada a la acción', desc: 'Bloque CTA', preview: '<div class="ep-cta"><div></div></div>', html: '<section style="padding: 60px 20px; background: #f4f4f7; border-radius: 16px; text-align: center;">\n  <h2 style="margin: 0 0 12px;">¿Listo para empezar?</h2>\n  <p style="margin: 0 0 24px; color: #555;">Únete a las personas que ya lo están usando.</p>\n  <a href="#" style="display: inline-block; padding: 12px 28px; background: #7c5cfc; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Comenzar ahora</a>\n</section>' },
-      { id: 'features', label: 'Grid de features', desc: '3 features con icono', preview: '<div class="ep-grid"><div></div><div></div><div></div></div>', html: '<section style="padding: 60px 20px;">\n  <h2 style="text-align: center; margin: 0 0 40px;">Características</h2>\n  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1100px; margin: 0 auto;">\n    <div><div style="font-size: 32px;">⚡</div><h3>Rápido</h3><p>Carga al instante.</p></div>\n    <div><div style="font-size: 32px;">🎨</div><h3>Bonito</h3><p>Diseño limpio.</p></div>\n    <div><div style="font-size: 32px;">🔒</div><h3>Seguro</h3><p>Sin riesgos.</p></div>\n  </div>\n</section>' },
-      { id: 'split', label: 'Split image + texto', desc: 'Dos columnas', preview: '<div class="ep-cols"><div></div><div></div></div>', html: '<section style="padding: 60px 20px;">\n  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; max-width: 1100px; margin: 0 auto;">\n    <div>\n      <img src="https://placehold.co/600x400/7c5cfc/ffffff?text=Imagen" alt="" style="width: 100%; border-radius: 12px; display: block;">\n    </div>\n    <div>\n      <h2>Título de la sección</h2>\n      <p>Descripción del contenido que aparece junto a la imagen. Editable.</p>\n      <a href="#" style="display: inline-block; margin-top: 12px; padding: 10px 22px; background: #7c5cfc; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Saber más</a>\n    </div>\n  </div>\n</section>' }
+      { id: 'hero', thumb: '◨', label: 'Hero', html: '<section style="padding: 100px 20px; text-align: center; background: linear-gradient(135deg, #7c5cfc, #22d3ee); color: #fff;">\n  <h1 style="font-size: 48px; margin: 0 0 16px;">Título principal</h1>\n  <p style="font-size: 20px; margin: 0 0 32px;">Subtítulo descriptivo que explica de qué va esto.</p>\n  <a href="#" style="display: inline-block; padding: 14px 32px; background: #fff; color: #7c5cfc; text-decoration: none; border-radius: 8px; font-weight: 700;">Empezar</a>\n</section>' },
+      { id: 'cta', thumb: '❐', label: 'Llamada a la acción', html: '<section style="padding: 60px 20px; background: #f4f4f7; border-radius: 16px; text-align: center;">\n  <h2 style="margin: 0 0 12px;">¿Listo para empezar?</h2>\n  <p style="margin: 0 0 24px; color: #555;">Únete a las personas que ya lo están usando.</p>\n  <a href="#" style="display: inline-block; padding: 12px 28px; background: #7c5cfc; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Comenzar ahora</a>\n</section>' },
+      { id: 'features', thumb: '⊞', label: 'Grid de features', html: '<section style="padding: 60px 20px;">\n  <h2 style="text-align: center; margin: 0 0 40px;">Características</h2>\n  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1100px; margin: 0 auto;">\n    <div><div style="font-size: 32px;">⚡</div><h3>Rápido</h3><p>Carga al instante.</p></div>\n    <div><div style="font-size: 32px;">🎨</div><h3>Bonito</h3><p>Diseño limpio.</p></div>\n    <div><div style="font-size: 32px;">🔒</div><h3>Seguro</h3><p>Sin riesgos.</p></div>\n  </div>\n</section>' },
+      { id: 'split', thumb: '◫', label: 'Split imagen + texto', html: '<section style="padding: 60px 20px;">\n  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; max-width: 1100px; margin: 0 auto;">\n    <div>\n      <img src="https://placehold.co/600x400/7c5cfc/ffffff?text=Imagen" alt="" style="width: 100%; border-radius: 12px; display: block;">\n    </div>\n    <div>\n      <h2>Título de la sección</h2>\n      <p>Descripción del contenido que aparece junto a la imagen. Editable.</p>\n      <a href="#" style="display: inline-block; margin-top: 12px; padding: 10px 22px; background: #7c5cfc; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Saber más</a>\n    </div>\n  </div>\n</section>' }
     ]
   }
 ];
+
+let currentCategory = 'text';
 
 /* =================================================
    SESIÓN
@@ -318,6 +314,7 @@ function renderHtml(html, onDone) {
     ensureRuntimeStyles(doc);
     createHandleLayer(doc);
     installInspector(doc);
+    installDropZone(doc);
     setMode(state.mode);
     if (onDone) onDone();
   };
@@ -340,6 +337,8 @@ function injectStyles(doc) {
     body.oc-select-mode * { cursor: move !important; }
     body.oc-text-mode, body.oc-text-mode * { cursor: text !important; }
     body.oc-editing [class*="oc-anim-"] { animation: none !important; }
+    body.oc-dragging-into { cursor: copy !important; }
+    body.oc-dragging-into * { cursor: copy !important; }
   `;
 }
 
@@ -371,7 +370,218 @@ function ensureRuntimeStyles(doc) {
 }
 
 /* =================================================
-   HANDLES
+   DROP ZONE (arrastrar y soltar en la página)
+   ================================================= */
+function installDropZone(doc) {
+  // Asegurar capa de indicador
+  let indicator = doc.getElementById('oc-drop-indicator');
+  if (!indicator) {
+    indicator = doc.createElement('div');
+    indicator.id = 'oc-drop-indicator';
+    indicator.setAttribute('data-oc-injected', '');
+    indicator.style.cssText = `
+      position: fixed;
+      height: 3px;
+      background: #7c5cfc;
+      border-radius: 3px;
+      pointer-events: none;
+      z-index: 2147483646;
+      display: none;
+      box-shadow: 0 0 12px rgba(124,92,252,.7), 0 0 3px rgba(124,92,252,1);
+      transition: opacity .1s ease;
+    `;
+    const dotStyle = `
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #7c5cfc;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      top: -5px;
+      box-shadow: 0 0 8px rgba(124,92,252,.8);
+    `;
+    const dotL = doc.createElement('div');
+    dotL.style.cssText = dotStyle + 'left: -5px;';
+    const dotR = doc.createElement('div');
+    dotR.style.cssText = dotStyle + 'right: -5px;';
+    indicator.appendChild(dotL);
+    indicator.appendChild(dotR);
+    doc.body.appendChild(indicator);
+  }
+
+  let dropTarget = null;
+  let dropPosition = 'after';
+
+  const isOCDrag = (e) => {
+    try {
+      const types = e.dataTransfer?.types || [];
+      return Array.from(types).some((t) =>
+        t === 'application/x-opencanvas-element' || t === 'text/plain'
+      );
+    } catch { return false; }
+  };
+
+  const findInsertionPoint = (target) => {
+    if (!target || target === doc.body || target === doc.documentElement) {
+      // Insertar al final del main o del body
+      const main = doc.querySelector('main') || doc.body;
+      const lastChild = main.lastElementChild;
+      if (lastChild && lastChild !== indicator) {
+        return { el: lastChild, position: 'after' };
+      }
+      return { el: null, position: 'append', container: main };
+    }
+
+    // Caminar hacia arriba hasta un elemento "de bloque" razonable
+    let el = target;
+    const blockTags = /^(SECTION|ARTICLE|MAIN|HEADER|FOOTER|DIV|P|H[1-6]|UL|OL|LI|BLOCKQUOTE|FIGURE|TABLE|FORM|ASIDE|NAV|PRE)$/;
+    while (el && el.parentElement && el.parentElement !== doc.body) {
+      if (blockTags.test(el.tagName)) break;
+      el = el.parentElement;
+    }
+
+    if (!el || el === indicator) {
+      const main = doc.querySelector('main') || doc.body;
+      return { el: null, position: 'append', container: main };
+    }
+
+    const rect = el.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const position = e_clientY_getter() < midY ? 'before' : 'after';
+
+    // Este truco es para poder pasar clientY desde fuera; usamos closure
+    return { el, position };
+  };
+
+  // Guardamos la última posición del mouse en cada dragover
+  let lastMouseY = 0;
+
+  const positionIndicatorAt = (el, position) => {
+    if (!el) { indicator.style.display = 'none'; return; }
+    const rect = el.getBoundingClientRect();
+    const y = position === 'before' ? rect.top : rect.bottom;
+    indicator.style.left = rect.left + 'px';
+    indicator.style.top = (y - 1) + 'px';
+    indicator.style.width = rect.width + 'px';
+    indicator.style.display = 'block';
+  };
+
+  const hideIndicator = () => { indicator.style.display = 'none'; };
+
+  const handleDragOver = (e) => {
+    if (!isOCDrag(e)) return;
+    e.preventDefault();
+    try { e.dataTransfer.dropEffect = 'copy'; } catch {}
+    lastMouseY = e.clientY;
+
+    // Buscar el punto de inserción
+    const target = e.target;
+    let result;
+
+    if (!target || target === doc.body || target === doc.documentElement) {
+      const main = doc.querySelector('main') || doc.body;
+      const lastChild = main.lastElementChild;
+      if (lastChild && lastChild !== indicator) {
+        result = { el: lastChild, position: 'after' };
+      } else {
+        result = { el: null, position: 'append', container: main };
+      }
+    } else {
+      let el = target;
+      const blockTags = /^(SECTION|ARTICLE|MAIN|HEADER|FOOTER|DIV|P|H[1-6]|UL|OL|LI|BLOCKQUOTE|FIGURE|TABLE|FORM|ASIDE|NAV|PRE)$/;
+      while (el && el.parentElement && el.parentElement !== doc.body) {
+        if (blockTags.test(el.tagName)) break;
+        el = el.parentElement;
+      }
+
+      if (!el || el === indicator) {
+        const main = doc.querySelector('main') || doc.body;
+        result = { el: null, position: 'append', container: main };
+      } else {
+        const rect = el.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        result = { el, position: e.clientY < midY ? 'before' : 'after' };
+      }
+    }
+
+    dropTarget = result;
+    if (result.el) {
+      positionIndicatorAt(result.el, result.position);
+    } else {
+      // Insertar al final: mostrar línea al final del contenedor
+      const container = result.container;
+      const rect = container.getBoundingClientRect();
+      indicator.style.left = rect.left + 'px';
+      indicator.style.top = (rect.bottom - 2) + 'px';
+      indicator.style.width = rect.width + 'px';
+      indicator.style.display = 'block';
+    }
+  };
+
+  const handleDragEnter = (e) => {
+    if (!isOCDrag(e)) return;
+    doc.body.classList.add('oc-dragging-into');
+  };
+
+  const handleDragLeave = (e) => {
+    if (!isOCDrag(e)) return;
+    // Si salimos completamente del documento
+    if (!e.relatedTarget || e.relatedTarget === doc.documentElement) {
+      hideIndicator();
+      dropTarget = null;
+      doc.body.classList.remove('oc-dragging-into');
+    }
+  };
+
+  const handleDrop = (e) => {
+    if (!isOCDrag(e)) return;
+    e.preventDefault();
+    hideIndicator();
+    doc.body.classList.remove('oc-dragging-into');
+
+    let html = '';
+    try {
+      html = e.dataTransfer.getData('application/x-opencanvas-element')
+        || e.dataTransfer.getData('text/plain');
+    } catch {}
+    if (!html) { dropTarget = null; return; }
+
+    const temp = doc.createElement('div');
+    temp.innerHTML = html.trim();
+    const newEl = temp.firstElementChild;
+    if (!newEl) { dropTarget = null; return; }
+
+    const result = dropTarget;
+    dropTarget = null;
+
+    if (result && result.el && result.el.parentElement) {
+      const ref = result.position === 'before' ? result.el : result.el.nextSibling;
+      result.el.parentElement.insertBefore(newEl, ref);
+    } else if (result && result.container) {
+      result.container.appendChild(newEl);
+    } else {
+      const main = doc.querySelector('main') || doc.body;
+      main.appendChild(newEl);
+    }
+
+    ensureRuntimeStyles(doc);
+    if (state._select) state._select(newEl);
+    snapshotNow();
+    toast('Elemento añadido ✓', 'ok');
+
+    setTimeout(() => {
+      try { newEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
+    }, 100);
+  };
+
+  doc.addEventListener('dragover', handleDragOver, true);
+  doc.addEventListener('dragenter', handleDragEnter, true);
+  doc.addEventListener('dragleave', handleDragLeave, true);
+  doc.addEventListener('drop', handleDrop, true);
+}
+
+/* =================================================
+   HANDLES DE REDIMENSIONADO
    ================================================= */
 const HANDLE_SIZE = 11;
 function createHandleLayer(doc) {
@@ -437,7 +647,7 @@ function getPosition(el) {
 }
 
 /* =================================================
-   INSPECTOR
+   INSPECTOR (mover/redimensionar/seleccionar)
    ================================================= */
 function installInspector(doc) {
   let hoverEl = null;
@@ -447,7 +657,8 @@ function installInspector(doc) {
 
   const isEditable = (el) =>
     el && el.nodeType === 1 && el !== doc.body && el !== doc.documentElement &&
-    !el.classList.contains('oc-handle') && !el.closest('#oc-handle-layer');
+    !el.classList.contains('oc-handle') && !el.closest('#oc-handle-layer') &&
+    el.id !== 'oc-drop-indicator';
 
   const clearHover = () => { if (hoverEl) hoverEl.classList.remove('oc-hover'); hoverEl = null; };
   const select = (el) => {
@@ -456,6 +667,8 @@ function installInspector(doc) {
     if (el) el.classList.add('oc-selected');
     updatePropsPanel(el);
     positionHandles(doc, el);
+    // Cambiar el panel a propiedades cuando se selecciona algo
+    switchPanel('props');
   };
   const stop = () => {
     if (dragging) dragging.style.willChange = '';
@@ -595,8 +808,9 @@ function clearSelection() {
   const doc = $('#preview').contentDocument;
   if (state.selectedEl) state.selectedEl.classList.remove('oc-selected');
   state.selectedEl = null;
-  $('#props').hidden = true;
   if (doc) hideHandles(doc);
+  // Mostrar mensaje vacío en props
+  updatePropsPanel(null);
 }
 
 /* =================================================
@@ -609,7 +823,6 @@ function gradientCss(g) {
   if (g.type === 'conic') return `conic-gradient(from ${g.angle}deg, ${stops})`;
   return `linear-gradient(${g.angle}deg, ${stops})`;
 }
-
 function parseGradient(el, cs) {
   const bg = cs.backgroundImage || '';
   const clip = cs.backgroundClip || cs.webkitBackgroundClip || '';
@@ -621,7 +834,6 @@ function parseGradient(el, cs) {
   const isConic = bg.includes('conic-gradient');
   const angleMatch = bg.match(/(?:from\s+)?(-?\d+(?:\.\d+)?)deg/);
   const angle = angleMatch ? Math.round(parseFloat(angleMatch[1])) : 135;
-
   const stops = [];
   const innerMatch = bg.match(/gradient\([^,]+,\s*(.+)\)/i);
   if (innerMatch) {
@@ -635,7 +847,6 @@ function parseGradient(el, cs) {
       else cur += ch;
     }
     if (cur.trim()) parts.push(cur.trim());
-
     parts.forEach((part, i) => {
       const colorMatch = part.match(/(rgba?\([^)]+\)|#[0-9a-f]{3,8})/i);
       const posMatch = part.match(/([\d.]+)%/);
@@ -653,10 +864,8 @@ function parseGradient(el, cs) {
     });
   }
   if (!stops.length) stops.push({ c: '#7c5cfc', p: 0 }, { c: '#22d3ee', p: 100 });
-
   return { use: true, text, type: isRadial ? 'radial' : isConic ? 'conic' : 'linear', angle, stops };
 }
-
 function applyGradient(el, g) {
   if (!g.use || !g.stops.length) {
     el.style.removeProperty('background-image');
@@ -677,7 +886,6 @@ function applyGradient(el, g) {
     el.style.removeProperty('-webkit-text-fill-color');
   }
 }
-
 function renderGradientStops() {
   const wrap = $('#grad-stops'); wrap.innerHTML = '';
   state.gradient.stops.forEach((stop, i) => {
@@ -722,11 +930,23 @@ function applyGradFromUI() {
    ================================================= */
 function updatePropsPanel(el) {
   const panel = $('#props');
-  if (!el) { panel.hidden = true; return; }
-  panel.hidden = false;
+  const emptyState = $('#empty-props');
+
+  if (!el) {
+    // No hay selección: mostrar estado vacío
+    if (emptyState) emptyState.hidden = false;
+    $$('#panel-props .props-tabs, #panel-props .props-body').forEach((n) => n.style.display = 'none');
+    return;
+  }
+  if (emptyState) emptyState.hidden = true;
+  $$('#panel-props .props-tabs').forEach((n) => n.style.display = 'flex');
+  // Restaurar la pestaña activa
+  const activeTab = document.querySelector('.tab.active')?.dataset.tab || 'content';
+  $$('#panel-props .props-body').forEach((p) => p.style.display = p.dataset.panel === activeTab ? 'flex' : 'none');
+
   const fid = document.activeElement?.id || null;
 
-  $('#props-title').textContent = el.tagName.toLowerCase() + (el.id ? '#' + el.id : '');
+  $('#props-title') && ($('#props-title').textContent = el.tagName.toLowerCase() + (el.id ? '#' + el.id : ''));
 
   const ta = $('#prop-text');
   const isSimple = el.children.length === 0;
@@ -764,7 +984,6 @@ function updatePropsPanel(el) {
   if (fid !== 'prop-anim-dur') $('#prop-anim-dur').value = anim.dur;
   if (fid !== 'prop-anim-delay') $('#prop-anim-delay').value = anim.delay;
 }
-
 function readAnimation(el) {
   const cls = [...el.classList].find((c) => c.startsWith('oc-anim-'));
   if (!cls) return { name: '', dur: 600, delay: 0 };
@@ -845,11 +1064,11 @@ function bindPropsEvents() {
     }
   };
 
-  $$('.tab').forEach((tab) => {
+  $$('#panel-props .tab').forEach((tab) => {
     tab.onclick = () => {
-      $$('.tab').forEach((t) => t.classList.remove('active'));
+      $$('#panel-props .tab').forEach((t) => t.classList.remove('active'));
       tab.classList.add('active');
-      $$('.props-body').forEach((p) => p.hidden = p.dataset.panel !== tab.dataset.tab);
+      $$('#panel-props .props-body').forEach((p) => p.hidden = p.dataset.panel !== tab.dataset.tab);
     };
   });
 
@@ -927,7 +1146,10 @@ function bindPropsEvents() {
     const el = sel(); if (!el) return;
     el.remove(); clearSelection(); snapshotNow();
   };
-  $('#props-close').onclick = clearSelection;
+  $('#props-close').onclick = () => {
+    $('#props').hidden = true;
+    clearSelection();
+  };
 }
 
 /* =================================================
@@ -944,7 +1166,6 @@ function setMode(mode) {
     doc.designMode = 'on';
     doc.body.classList.add('oc-text-mode');
     doc.body.classList.remove('oc-select-mode');
-    $('#props').hidden = true;
     hideHandles(doc);
     if (state.selectedEl) {
       state.selectedEl.classList.remove('oc-selected');
@@ -960,108 +1181,114 @@ function setMode(mode) {
 }
 
 /* =================================================
-   BIBLIOTECA DE ELEMENTOS — UI
+   SWITCH PANEL (Propiedades / Elementos)
    ================================================= */
-let currentCategory = 'text';
-
-function openElementsModal() {
-  if (!state.filePath) { toast('Abre una página primero', 'error'); return; }
-  renderElementsCategories();
-  renderElementsGrid();
-  updateElementsHint();
-  $('#elements-modal').hidden = false;
-}
-
-function updateElementsHint() {
-  const hint = $('#elements-hint');
-  if (state.selectedEl) {
-    hint.textContent = `Se insertará después de <${state.selectedEl.tagName.toLowerCase()}>.`;
-  } else {
-    hint.textContent = 'Se insertará al final de la página.';
+function switchPanel(panel) {
+  state.activePanel = panel;
+  $$('.pswitch').forEach((b) => b.classList.toggle('active', b.dataset.panel === panel));
+  $('#panel-props').hidden = panel !== 'props';
+  $('#panel-elements').hidden = panel !== 'elements';
+  if (panel === 'elements') {
+    renderElementsCategories();
+    renderElementsList();
   }
 }
 
+function showPropsPanel() {
+  $('#props').hidden = false;
+}
+
+/* =================================================
+   PANEL: ELEMENTOS (sidebar derecho)
+   ================================================= */
 function renderElementsCategories() {
-  const wrap = $('#elements-cats');
+  const wrap = $('#elements-cats-row');
   wrap.innerHTML = '';
   ELEMENT_LIBRARY.forEach((cat) => {
-    const btn = document.createElement('button');
-    btn.className = 'elements-cat' + (cat.id === currentCategory ? ' active' : '');
-    btn.innerHTML = `<span class="cat-icon">${cat.icon}</span><span>${cat.label}</span>`;
-    btn.onclick = () => {
+    const chip = document.createElement('button');
+    chip.className = 'cat-chip' + (cat.id === currentCategory ? ' active' : '');
+    chip.textContent = cat.label;
+    chip.onclick = () => {
       currentCategory = cat.id;
       renderElementsCategories();
-      renderElementsGrid();
+      renderElementsList();
     };
-    wrap.appendChild(btn);
+    wrap.appendChild(chip);
   });
 }
 
-function renderElementsGrid() {
-  const grid = $('#elements-grid');
-  grid.innerHTML = '';
+function renderElementsList() {
+  const list = $('#elements-list');
+  list.innerHTML = '';
   const cat = ELEMENT_LIBRARY.find((c) => c.id === currentCategory);
   if (!cat) return;
+
   cat.items.forEach((item) => {
     const btn = document.createElement('button');
-    btn.className = 'element-btn';
+    btn.className = 'el-item';
+    btn.draggable = true;
+    btn.dataset.elementId = item.id;
     btn.innerHTML = `
-      <div class="element-preview">${item.preview}</div>
-      <div>
-        <div class="element-label">${escapeHtml(item.label)}</div>
-        <div class="element-desc">${escapeHtml(item.desc)}</div>
-      </div>
+      <span class="el-thumb">${item.thumb}</span>
+      <span class="el-name">${escapeHtml(item.label)}</span>
+      <span class="el-handle">⋮⋮</span>
     `;
-    btn.onclick = () => insertElement(item.html);
-    grid.appendChild(btn);
+
+    // Click: insertar después del seleccionado o al final del main
+    btn.addEventListener('click', () => {
+      insertElementFallback(item.html);
+    });
+
+    // Drag start
+    btn.addEventListener('dragstart', (e) => {
+      const html = item.html;
+      try {
+        e.dataTransfer.setData('application/x-opencanvas-element', html);
+        e.dataTransfer.setData('text/plain', html);
+        e.dataTransfer.effectAllowed = 'copy';
+      } catch {}
+      btn.classList.add('dragging');
+      document.body.classList.add('oc-dragging-element');
+      // Si el iframe pierde los eventos, al menos mostramos un cursor
+      setTimeout(() => { try { e.dataTransfer.dropEffect = 'copy'; } catch {} }, 0);
+    });
+
+    btn.addEventListener('dragend', () => {
+      btn.classList.remove('dragging');
+      document.body.classList.remove('oc-dragging-element');
+    });
+
+    list.appendChild(btn);
   });
 }
 
 /* =================================================
-   INSERCIÓN DE ELEMENTOS
+   INSERCIÓN (fallback con click)
    ================================================= */
-function insertElement(html) {
+function insertElementFallback(html) {
   const doc = $('#preview').contentDocument;
   if (!doc || !doc.body) { toast('No hay página abierta', 'error'); return; }
 
-  // Parsear HTML
   const temp = doc.createElement('div');
   temp.innerHTML = html.trim();
   const newEl = temp.firstElementChild;
   if (!newEl) { toast('Elemento inválido', 'error'); return; }
 
-  // Determinar punto de inserción
-  let container, reference;
   if (state.selectedEl && doc.body.contains(state.selectedEl) && state.selectedEl !== doc.body) {
-    container = state.selectedEl.parentElement;
-    reference = state.selectedEl.nextSibling;
+    state.selectedEl.parentElement.insertBefore(newEl, state.selectedEl.nextSibling);
   } else {
-    const main = doc.querySelector('main');
-    container = main || doc.body;
-    reference = null;
+    const main = doc.querySelector('main') || doc.body;
+    main.appendChild(newEl);
   }
 
-  container.insertBefore(newEl, reference);
-
-  // Actualizar estilos de animación (por si el nuevo elemento las tiene)
   ensureRuntimeStyles(doc);
-
-  // Seleccionar el nuevo elemento
   if (state._select) state._select(newEl);
-
-  // Guardar snapshot
   snapshotNow();
+  toast('Elemento añadido ✓', 'ok');
 
-  // Cerrar modal y volver a modo selección
-  $('#elements-modal').hidden = true;
-  if (state.mode !== 'select') setMode('select');
-
-  // Scroll hacia el elemento insertado
   setTimeout(() => {
     try { newEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
   }, 100);
-
-  toast('Elemento añadido ✓', 'ok');
 }
 
 /* =================================================
@@ -1174,7 +1401,6 @@ function writeMenuTree(navEl, items, doc) {
    MENÚ EDITOR
    ================================================= */
 let navState = [];
-
 function openNavEditor() {
   const doc = $('#preview').contentDocument;
   const menus = detectMenus(doc);
@@ -1217,23 +1443,18 @@ function renderNavItems(ul, items) {
     wrapper.className = 'nav-item';
     const row = document.createElement('div');
     row.className = 'nav-item-row';
-
     const textInp = document.createElement('input');
     textInp.type = 'text'; textInp.value = item.text; textInp.placeholder = 'Texto';
     textInp.oninput = () => { item.text = textInp.value; };
-
     const hrefInp = document.createElement('input');
     hrefInp.type = 'text'; hrefInp.value = item.href; hrefInp.placeholder = 'enlace';
     hrefInp.oninput = () => { item.href = hrefInp.value; };
-
     const btnUp = document.createElement('button');
     btnUp.className = 'nav-mini-btn'; btnUp.textContent = '↑';
     btnUp.onclick = () => { if (i > 0) { [items[i-1], items[i]] = [items[i], items[i-1]]; renderNavEditor(); } };
-
     const btnDown = document.createElement('button');
     btnDown.className = 'nav-mini-btn'; btnDown.textContent = '↓';
     btnDown.onclick = () => { if (i < items.length - 1) { [items[i+1], items[i]] = [items[i], items[i+1]]; renderNavEditor(); } };
-
     const btnChild = document.createElement('button');
     btnChild.className = 'nav-mini-btn'; btnChild.textContent = '↳';
     btnChild.onclick = () => {
@@ -1241,11 +1462,9 @@ function renderNavItems(ul, items) {
       item.children.push({ text: 'Subitem', href: '#', children: [] });
       renderNavEditor();
     };
-
     const btnDel = document.createElement('button');
     btnDel.className = 'nav-mini-btn del'; btnDel.textContent = '✕';
     btnDel.onclick = () => { items.splice(i, 1); renderNavEditor(); };
-
     row.append(textInp, hrefInp, btnUp, btnDown, btnChild, btnDel);
     wrapper.appendChild(row);
     if (item.children && item.children.length) {
@@ -1335,7 +1554,6 @@ async function createPage() {
   const addToAll = $('#page-add-nav-all').checked;
   $('#page-create').disabled = true;
   toast('Creando página…');
-
   try {
     const currentHtml = state.filePath
       ? (await getFile({ ...state, path: state.filePath })).content
@@ -1343,7 +1561,6 @@ async function createPage() {
     const newHtml = buildNewPage(title, currentHtml, addToCurrent ? { text: title, href: slug } : null);
     await putFile({ ...state, path: slug, content: newHtml,
       message: `Create ${slug} via OpenCanvas Studio` });
-
     if (addToAll) {
       const others = state.files.filter((f) => f.path !== slug);
       let count = 0;
@@ -1360,7 +1577,6 @@ async function createPage() {
       }
       toast(`Página creada y menús actualizados en ${count} páginas ✓`, 'ok');
     } else toast('Página creada ✓', 'ok');
-
     $('#page-modal').hidden = true;
     await refreshFileList();
     await openFile(slug);
@@ -1376,7 +1592,6 @@ function buildNewPage(title, currentHtml, navLink) {
   const header = doc.querySelector('header');
   const footer = doc.querySelector('footer');
   const lang = doc.documentElement.lang || 'es';
-
   let headerHtml = '';
   if (header) {
     const clone = header.cloneNode(true);
@@ -1488,13 +1703,13 @@ function serializeCurrentIframe() {
   const clone = doc.documentElement.cloneNode(true);
   clone.querySelectorAll('[data-oc-injected]').forEach((el) => el.remove());
   clone.querySelector('#oc-handle-layer')?.remove();
+  clone.querySelector('#oc-drop-indicator')?.remove();
   clone.querySelectorAll('.oc-selected,.oc-hover').forEach((el) => {
     el.classList.remove('oc-selected', 'oc-hover');
   });
   clone.querySelectorAll('body').forEach((b) => {
-    b.classList.remove('oc-text-mode','oc-select-mode','oc-editing');
+    b.classList.remove('oc-text-mode','oc-select-mode','oc-editing','oc-dragging-into');
   });
-
   const used = new Set();
   clone.querySelectorAll('[class*="oc-anim-"]').forEach((el) => {
     [...el.classList].forEach((c) => { if (c.startsWith('oc-anim-')) used.add(c.slice('oc-anim-'.length)); });
@@ -1506,7 +1721,6 @@ function serializeCurrentIframe() {
     style.textContent = buildRuntimeCss(used);
     clone.querySelector('head')?.appendChild(style);
   }
-
   let out = '<!DOCTYPE html>\n' + clone.outerHTML;
   out = out
     .replace(/<base[^>]*>\s*/i, '')
@@ -1547,7 +1761,6 @@ $('#btn-save').onclick = save;
 $('#btn-reload').onclick = () => state.filePath && openFile(state.filePath);
 $('#btn-select').onclick = () => setMode('select');
 $('#btn-text').onclick = () => setMode('text');
-$('#btn-add-element').onclick = openElementsModal;
 $('#btn-nav').onclick = openNavEditor;
 $('#btn-new-page').onclick = openPageModal;
 $('#sidebar-new').onclick = openPageModal;
@@ -1556,6 +1769,11 @@ $('#btn-redo').onclick = redo;
 $('#file-select').onchange = (e) => {
   const p = e.target.value;
   if (p && p !== state.filePath) openFile(p);
+};
+$('#btn-add-element').onclick = () => {
+  if (!state.filePath) { toast('Abre una página primero', 'error'); return; }
+  showPropsPanel();
+  switchPanel('elements');
 };
 
 $$('.device').forEach((btn) => {
@@ -1566,6 +1784,9 @@ $$('.device').forEach((btn) => {
     $('#canvas-frame').dataset.device = state.device;
   };
 });
+$$('.pswitch').forEach((sw) => {
+  sw.onclick = () => switchPanel(sw.dataset.panel);
+});
 
 $('#btn-more').onclick = (e) => {
   e.stopPropagation();
@@ -1573,8 +1794,6 @@ $('#btn-more').onclick = (e) => {
   m.hidden = !m.hidden;
 };
 document.addEventListener('click', () => { $('#more-menu').hidden = true; });
-
-$('#elements-close').onclick = () => { $('#elements-modal').hidden = true; };
 
 $('#nav-close').onclick = () => { $('#nav-modal').hidden = true; };
 $('#nav-cancel').onclick = () => { $('#nav-modal').hidden = true; };
@@ -1588,6 +1807,14 @@ $('#page-title').oninput = () => {
   if (!s.dataset.touched) s.value = slugify($('#page-title').value) + '.html';
 };
 $('#page-slug').oninput = () => { $('#page-slug').dataset.touched = '1'; };
+
+/* Asegurar que el iframe acepta drops cuando el puntero está sobre el borde */
+$('#preview').addEventListener('dragover', (e) => {
+  try { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } catch {}
+});
+$('#preview').addEventListener('drop', (e) => {
+  try { e.preventDefault(); } catch {}
+});
 
 /* Atajos globales */
 window.addEventListener('keydown', (e) => {
@@ -1603,11 +1830,16 @@ window.addEventListener('keydown', (e) => {
   } else if (e.key === 't' || e.key === 'T') {
     setMode('text');
   } else if (e.key === 'a' || e.key === 'A') {
-    if (!$('#editor').hidden) { e.preventDefault(); openElementsModal(); }
+    if (!$('#editor').hidden) {
+      e.preventDefault();
+      showPropsPanel();
+      switchPanel('elements');
+    }
   }
 });
 
 bindPropsEvents();
+switchPanel('props');
 
 /* Arranque */
 (async function boot() {
