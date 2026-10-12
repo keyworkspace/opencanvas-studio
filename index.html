@@ -71,7 +71,7 @@
       <div class="topbar-right">
         <button id="btn-undo" class="btn btn-icon" title="Deshacer (Ctrl+Z)" disabled>↶</button>
         <button id="btn-redo" class="btn btn-icon" title="Rehacer (Ctrl+Y)" disabled>↷</button>
-        <button id="btn-add-element" class="btn btn-primary" title="Añadir elemento">+ Elemento</button>
+        <button id="btn-add-element" class="btn btn-primary" title="Añadir elemento (A)">+ Elemento</button>
         <button id="btn-nav" class="btn" title="Menús del sitio">≡ Menús</button>
         <button id="btn-new-page" class="btn" title="Nueva página">+ Página</button>
         <button id="btn-reload" class="btn btn-icon" title="Recargar">↻</button>
@@ -85,7 +85,7 @@
 
     <!-- Workspace -->
     <div class="workspace">
-      <!-- Sidebar -->
+      <!-- Sidebar izquierda -->
       <aside id="sidebar" class="sidebar">
         <div class="sidebar-section">
           <div class="sidebar-title">
@@ -120,154 +120,153 @@
         </div>
       </main>
 
-      <!-- Properties -->
+      <!-- Panel derecho: Propiedades + Elementos -->
       <aside id="props" class="props" hidden>
         <div class="props-head">
-          <div class="props-head-info">
-            <span class="props-tag" id="props-title">Elemento</span>
+          <div class="panel-switch">
+            <button class="pswitch active" data-panel="props">Propiedades</button>
+            <button class="pswitch" data-panel="elements">Elementos</button>
           </div>
           <button id="props-close" class="btn-icon-sm" title="Cerrar">✕</button>
         </div>
 
-        <div class="props-tabs">
-          <button class="tab active" data-tab="content">Contenido</button>
-          <button class="tab" data-tab="style">Estilo</button>
-          <button class="tab" data-tab="effects">Efectos</button>
-        </div>
-
-        <!-- Tab: Contenido -->
-        <div class="props-body" data-panel="content">
-          <label class="field">
-            <span>Texto</span>
-            <textarea id="prop-text" rows="3" placeholder="Escribe el texto…"></textarea>
-          </label>
-          <div class="field">
-            <span>Posición</span>
-            <div class="input-group">
-              <label class="mini"><span>X</span><input id="prop-x" type="number" /></label>
-              <label class="mini"><span>Y</span><input id="prop-y" type="number" /></label>
-            </div>
+        <!-- ========== PANEL: PROPIEDADES ========== -->
+        <div class="panel-view" id="panel-props">
+          <div class="props-tabs">
+            <button class="tab active" data-tab="content">Contenido</button>
+            <button class="tab" data-tab="style">Estilo</button>
+            <button class="tab" data-tab="effects">Efectos</button>
           </div>
-          <div class="field">
-            <span>Tamaño</span>
-            <div class="input-group">
-              <label class="mini"><span>An</span><input id="prop-w" type="number" /></label>
-              <label class="mini"><span>Al</span><input id="prop-h" type="number" /></label>
-            </div>
-          </div>
-          <button id="prop-delete" class="btn btn-danger btn-block">Eliminar elemento</button>
-        </div>
 
-        <!-- Tab: Estilo -->
-        <div class="props-body" data-panel="style" hidden>
-          <label class="field">
-            <span>Color de fondo</span>
-            <div class="color-row">
-              <input id="prop-bg" type="color" />
-              <input id="prop-bg-hex" type="text" class="hex-input" placeholder="#ffffff" />
-            </div>
-          </label>
-          <label class="field">
-            <span>Color de texto</span>
-            <div class="color-row">
-              <input id="prop-color" type="color" />
-              <input id="prop-color-hex" type="text" class="hex-input" placeholder="#000000" />
-            </div>
-          </label>
-
-          <div class="field-sep"></div>
-
-          <label class="switch">
-            <input type="checkbox" id="prop-grad-use" />
-            <span class="switch-track"></span>
-            <span class="switch-label">Usar degradado</span>
-          </label>
-
-          <div id="prop-grad-fields" hidden>
-            <div class="field">
-              <span>Tipo</span>
-              <div class="segmented">
-                <button class="seg" data-grad-type="linear">Lineal</button>
-                <button class="seg" data-grad-type="radial">Radial</button>
-                <button class="seg" data-grad-type="conic">Cónico</button>
-              </div>
-            </div>
-            <div class="field" id="grad-angle-wrap">
-              <span>Ángulo</span>
-              <input id="prop-grad-angle" type="range" min="0" max="360" value="135" />
-              <span class="range-val"><span id="grad-angle-val">135</span>°</span>
-            </div>
-            <div class="field">
-              <span>Colores del degradado</span>
-              <div id="grad-stops" class="grad-stops"></div>
-              <div class="grad-preview" id="prop-grad-preview"></div>
-              <button class="btn btn-sm btn-block" id="grad-add-stop">+ Añadir color</button>
-            </div>
-            <div class="preset-row">
-              <span class="preset-label">Presets:</span>
-              <div class="preset-chips">
-                <button class="preset-chip" data-preset="rainbow" title="Arcoíris"></button>
-                <button class="preset-chip" data-preset="sunset" title="Sunset"></button>
-                <button class="preset-chip" data-preset="ocean" title="Océano"></button>
-                <button class="preset-chip" data-preset="fire" title="Fuego"></button>
-                <button class="preset-chip" data-preset="pastel" title="Pastel"></button>
-                <button class="preset-chip" data-preset="neon" title="Neón"></button>
-                <button class="preset-chip" data-preset="aurora" title="Aurora"></button>
-                <button class="preset-chip" data-preset="forest" title="Bosque"></button>
-                <button class="preset-chip" data-preset="galaxy" title="Galaxia"></button>
-                <button class="preset-chip" data-preset="mono" title="Monocromo"></button>
-              </div>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="prop-grad-text" />
-              <span class="switch-track"></span>
-              <span class="switch-label">Aplicar al texto</span>
+          <div class="props-body" data-panel="content">
+            <label class="field">
+              <span>Texto</span>
+              <textarea id="prop-text" rows="3" placeholder="Escribe el texto…"></textarea>
             </label>
+            <div class="field">
+              <span>Posición</span>
+              <div class="input-group">
+                <label class="mini"><span>X</span><input id="prop-x" type="number" /></label>
+                <label class="mini"><span>Y</span><input id="prop-y" type="number" /></label>
+              </div>
+            </div>
+            <div class="field">
+              <span>Tamaño</span>
+              <div class="input-group">
+                <label class="mini"><span>An</span><input id="prop-w" type="number" /></label>
+                <label class="mini"><span>Al</span><input id="prop-h" type="number" /></label>
+              </div>
+            </div>
+            <button id="prop-delete" class="btn btn-danger btn-block">Eliminar elemento</button>
+          </div>
+
+          <div class="props-body" data-panel="style" hidden>
+            <label class="field">
+              <span>Color de fondo</span>
+              <div class="color-row">
+                <input id="prop-bg" type="color" />
+                <input id="prop-bg-hex" type="text" class="hex-input" placeholder="#ffffff" />
+              </div>
+            </label>
+            <label class="field">
+              <span>Color de texto</span>
+              <div class="color-row">
+                <input id="prop-color" type="color" />
+                <input id="prop-color-hex" type="text" class="hex-input" placeholder="#000000" />
+              </div>
+            </label>
+
+            <div class="field-sep"></div>
+
+            <label class="switch">
+              <input type="checkbox" id="prop-grad-use" />
+              <span class="switch-track"></span>
+              <span class="switch-label">Usar degradado</span>
+            </label>
+
+            <div id="prop-grad-fields" hidden>
+              <div class="field">
+                <span>Tipo</span>
+                <div class="segmented">
+                  <button class="seg" data-grad-type="linear">Lineal</button>
+                  <button class="seg" data-grad-type="radial">Radial</button>
+                  <button class="seg" data-grad-type="conic">Cónico</button>
+                </div>
+              </div>
+              <div class="field" id="grad-angle-wrap">
+                <span>Ángulo</span>
+                <input id="prop-grad-angle" type="range" min="0" max="360" value="135" />
+                <span class="range-val"><span id="grad-angle-val">135</span>°</span>
+              </div>
+              <div class="field">
+                <span>Colores del degradado</span>
+                <div id="grad-stops" class="grad-stops"></div>
+                <div class="grad-preview" id="prop-grad-preview"></div>
+                <button class="btn btn-sm btn-block" id="grad-add-stop">+ Añadir color</button>
+              </div>
+              <div class="preset-row">
+                <span class="preset-label">Presets:</span>
+                <div class="preset-chips">
+                  <button class="preset-chip" data-preset="rainbow" title="Arcoíris"></button>
+                  <button class="preset-chip" data-preset="sunset" title="Sunset"></button>
+                  <button class="preset-chip" data-preset="ocean" title="Océano"></button>
+                  <button class="preset-chip" data-preset="fire" title="Fuego"></button>
+                  <button class="preset-chip" data-preset="pastel" title="Pastel"></button>
+                  <button class="preset-chip" data-preset="neon" title="Neón"></button>
+                  <button class="preset-chip" data-preset="aurora" title="Aurora"></button>
+                  <button class="preset-chip" data-preset="forest" title="Bosque"></button>
+                  <button class="preset-chip" data-preset="galaxy" title="Galaxia"></button>
+                  <button class="preset-chip" data-preset="mono" title="Monocromo"></button>
+                </div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="prop-grad-text" />
+                <span class="switch-track"></span>
+                <span class="switch-label">Aplicar al texto</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="props-body" data-panel="effects" hidden>
+            <label class="field">
+              <span>Animación de entrada</span>
+              <select id="prop-anim-name">
+                <option value="">— ninguna —</option>
+                <option value="fade-in">Fade In</option>
+                <option value="slide-up">Slide Up</option>
+                <option value="slide-down">Slide Down</option>
+                <option value="slide-left">Slide Left</option>
+                <option value="slide-right">Slide Right</option>
+                <option value="zoom-in">Zoom In</option>
+                <option value="bounce-in">Bounce In</option>
+                <option value="rotate-in">Rotate In</option>
+                <option value="flip-in">Flip In</option>
+                <option value="pulse">Pulse (loop)</option>
+              </select>
+            </label>
+            <div class="input-group">
+              <label class="mini"><span>Dur (ms)</span><input id="prop-anim-dur" type="number" value="600" step="100" /></label>
+              <label class="mini"><span>Ret (ms)</span><input id="prop-anim-delay" type="number" value="0" step="100" /></label>
+            </div>
+            <button class="btn btn-sm btn-block" id="prop-anim-play">▶ Reproducir animación</button>
+          </div>
+
+          <div class="empty-props" id="empty-props">
+            <div class="empty-props-icon">✥</div>
+            <p>Selecciona un elemento en la página para editarlo.</p>
           </div>
         </div>
 
-        <!-- Tab: Efectos -->
-        <div class="props-body" data-panel="effects" hidden>
-          <label class="field">
-            <span>Animación de entrada</span>
-            <select id="prop-anim-name">
-              <option value="">— ninguna —</option>
-              <option value="fade-in">Fade In</option>
-              <option value="slide-up">Slide Up</option>
-              <option value="slide-down">Slide Down</option>
-              <option value="slide-left">Slide Left</option>
-              <option value="slide-right">Slide Right</option>
-              <option value="zoom-in">Zoom In</option>
-              <option value="bounce-in">Bounce In</option>
-              <option value="rotate-in">Rotate In</option>
-              <option value="flip-in">Flip In</option>
-              <option value="pulse">Pulse (loop)</option>
-            </select>
-          </label>
-          <div class="input-group">
-            <label class="mini"><span>Dur (ms)</span><input id="prop-anim-dur" type="number" value="600" step="100" /></label>
-            <label class="mini"><span>Ret (ms)</span><input id="prop-anim-delay" type="number" value="0" step="100" /></label>
+        <!-- ========== PANEL: ELEMENTOS ========== -->
+        <div class="panel-view" id="panel-elements" hidden>
+          <div class="elements-hint">
+            <span class="hint-icon">↯</span>
+            <span>Arrastra un elemento a la página</span>
           </div>
-          <button class="btn btn-sm btn-block" id="prop-anim-play">▶ Reproducir animación</button>
+          <div class="elements-cats-row" id="elements-cats-row"></div>
+          <div class="elements-list" id="elements-list"></div>
         </div>
       </aside>
-    </div>
-
-    <!-- ============ MODAL: BIBLIOTECA DE ELEMENTOS ============ -->
-    <div id="elements-modal" class="modal" hidden>
-      <div class="modal-card modal-xl">
-        <div class="modal-head">
-          <div>
-            <h2>Añadir elemento</h2>
-            <p class="modal-sub" id="elements-hint">Haz clic para insertarlo. Se añade después del elemento seleccionado o al final de la página.</p>
-          </div>
-          <button class="btn-icon-sm" id="elements-close">✕</button>
-        </div>
-        <div class="modal-body elements-body">
-          <aside class="elements-sidebar" id="elements-cats"></aside>
-          <div class="elements-grid" id="elements-grid"></div>
-        </div>
-      </div>
     </div>
 
     <!-- ============ MODAL: MENÚS ============ -->
