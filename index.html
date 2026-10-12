@@ -71,6 +71,7 @@
       <div class="topbar-right">
         <button id="btn-undo" class="btn btn-icon" title="Deshacer (Ctrl+Z)" disabled>↶</button>
         <button id="btn-redo" class="btn btn-icon" title="Rehacer (Ctrl+Y)" disabled>↷</button>
+        <button id="btn-add-element" class="btn btn-primary" title="Añadir elemento">+ Elemento</button>
         <button id="btn-nav" class="btn" title="Menús del sitio">≡ Menús</button>
         <button id="btn-new-page" class="btn" title="Nueva página">+ Página</button>
         <button id="btn-reload" class="btn btn-icon" title="Recargar">↻</button>
@@ -101,6 +102,7 @@
             <li><kbd>Ctrl</kbd>+<kbd>S</kbd><span>Guardar</span></li>
             <li><kbd>V</kbd><span>Modo mover</span></li>
             <li><kbd>T</kbd><span>Modo texto</span></li>
+            <li><kbd>A</kbd><span>Añadir elemento</span></li>
             <li><kbd>Esc</kbd><span>Salir del texto</span></li>
             <li><kbd>Del</kbd><span>Eliminar elemento</span></li>
           </ul>
@@ -205,15 +207,15 @@
               <span class="preset-label">Presets:</span>
               <div class="preset-chips">
                 <button class="preset-chip" data-preset="rainbow" title="Arcoíris"></button>
-                <button class="preset-chip" data-preset="pride" title="Pride"></button>
-                <button class="preset-chip" data-preset="trans" title="Trans"></button>
-                <button class="preset-chip" data-preset="bi" title="Bi"></button>
-                <button class="preset-chip" data-preset="pan" title="Pan"></button>
-                <button class="preset-chip" data-preset="nonbinary" title="No binario"></button>
                 <button class="preset-chip" data-preset="sunset" title="Sunset"></button>
                 <button class="preset-chip" data-preset="ocean" title="Océano"></button>
                 <button class="preset-chip" data-preset="fire" title="Fuego"></button>
                 <button class="preset-chip" data-preset="pastel" title="Pastel"></button>
+                <button class="preset-chip" data-preset="neon" title="Neón"></button>
+                <button class="preset-chip" data-preset="aurora" title="Aurora"></button>
+                <button class="preset-chip" data-preset="forest" title="Bosque"></button>
+                <button class="preset-chip" data-preset="galaxy" title="Galaxia"></button>
+                <button class="preset-chip" data-preset="mono" title="Monocromo"></button>
               </div>
             </div>
             <label class="switch">
@@ -249,6 +251,23 @@
           <button class="btn btn-sm btn-block" id="prop-anim-play">▶ Reproducir animación</button>
         </div>
       </aside>
+    </div>
+
+    <!-- ============ MODAL: BIBLIOTECA DE ELEMENTOS ============ -->
+    <div id="elements-modal" class="modal" hidden>
+      <div class="modal-card modal-xl">
+        <div class="modal-head">
+          <div>
+            <h2>Añadir elemento</h2>
+            <p class="modal-sub" id="elements-hint">Haz clic para insertarlo. Se añade después del elemento seleccionado o al final de la página.</p>
+          </div>
+          <button class="btn-icon-sm" id="elements-close">✕</button>
+        </div>
+        <div class="modal-body elements-body">
+          <aside class="elements-sidebar" id="elements-cats"></aside>
+          <div class="elements-grid" id="elements-grid"></div>
+        </div>
+      </div>
     </div>
 
     <!-- ============ MODAL: MENÚS ============ -->
